@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://br5p0otdvjd8i"]
+
+[ext_resource type="Script" uid="uid://dffara03wqmw" path="res://Scenes/GestorCombate.gd" id="1_kbcoa"]
+
+[node name="GestorCombate" type="Node" unique_id=1637219252]
+script = ExtResource("1_kbcoa")
