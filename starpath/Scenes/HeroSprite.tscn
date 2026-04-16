@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://dptgmf513gxau"]
+
+[ext_resource type="Texture2D" uid="uid://cmx5171wqwg6h" path="res://icon.svg" id="1_3y3mh"]
+[ext_resource type="Script" uid="uid://bof5wpydm7fdd" path="res://Scripts/CombatantSprite.gd" id="1_uysmh"]
+[ext_resource type="Script" uid="uid://b2nb2ij58wmxg" path="res://Scripts/BaseEntity.gd" id="3_a3f3h"]
+[ext_resource type="Resource" uid="uid://dl7te7i6vt4rx" path="res://Resources/Hero.tres" id="4_7bjhp"]
+
+[node name="HeroSprite" type="Node2D" unique_id=766005803 node_paths=PackedStringArray("entity_logic") groups=["Heroes"]]
+script = ExtResource("1_uysmh")
+entity_logic = NodePath("Logic")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=441823807]
+position = Vector2(564, 231)
+texture = ExtResource("1_3y3mh")
+
+[node name="ProgressBar" type="ProgressBar" parent="." unique_id=1020132193]
+offset_left = 562.0
+offset_top = 119.0
+offset_right = 566.0
+offset_bottom = 146.0
+
+[node name="Logic" type="Node" parent="." unique_id=1783596122]
+script = ExtResource("3_a3f3h")
+stats = ExtResource("4_7bjhp")

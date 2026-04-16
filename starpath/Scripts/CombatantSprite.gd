@@ -1,11 +1,33 @@
-extends Node
+class_name CombatantSprite
+extends Node2D
 
+# ── Referencias a los Nodos Visuales de esta escena ────────────────────────
+@onready var sprite: Sprite2D = $Sprite2D
+@onready var health_bar: ProgressBar = $ProgressBar
 
-# Called when the node enters the scene tree for the first time.
+# ── Referencia al Cerebro Lógico ───────────────
+@export var entity_logic: BaseEntity 
+
 func _ready() -> void:
-	pass # Replace with function body.
+	if not entity_logic:
+		push_error("CombatantSprite: ¡A " + name + " le falta asignarle su nodo Logic!")
+		return
+		
+	# Conectamos las señales del cerebro lógico a nuestras funciones visuales
+	entity_logic.stats_changed.connect(_on_stats_changed)
+	entity_logic.defeated.connect(_on_defeated)
+	
+	# Inicializamos la barra de vida para que empiece llena
+	_on_stats_changed()
 
+# ── Reacciones Visuales ────────────────────────────────────────────────────
+func _on_stats_changed() -> void:
+	# Actualizamos la barra de vida leyendo los datos del cerebro
+	health_bar.max_value = entity_logic.stats.max_hp
+	health_bar.value = entity_logic.current_hp
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+func _on_defeated() -> void:
+	print(name + " ha sido derrotado visualmente.")
+	# Hacemos que el sprite desaparezca poco a poco al morir (efecto fantasma)
+	var tween = create_tween()
+	tween.tween_property(sprite, "modulate:a", 0.0, 1.0)
