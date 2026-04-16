@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://1ua12cojo4kw"]
+
+[ext_resource type="Script" uid="uid://tbrn0mdsnx0t" path="res://Scripts/CharacterStats.gd" id="1_w3wub"]
+[ext_resource type="Script" uid="uid://knxc2hn10nsh" path="res://Scripts/SkillData.gd" id="2_25gtd"]
+
+[resource]
+script = ExtResource("1_w3wub")
+character_name = "Limo"
+max_hp = 50
+max_mp = 25
+attack = 10
+defense = 5
+speed = 8
+metadata/_custom_type_script = "uid://tbrn0mdsnx0t"
