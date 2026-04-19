@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://1oxeodtlv3o8"]
+
+[ext_resource type="Script" uid="uid://c2yscwkoiddrq" path="res://Scenes/BattleScene.gd" id="1_hb1yk"]
+[ext_resource type="PackedScene" uid="uid://dptgmf513gxau" path="res://Scenes/HeroSprite.tscn" id="2_u810s"]
+[ext_resource type="PackedScene" uid="uid://oovclq3a00nm" path="res://Scenes/EnemySprite.tscn" id="3_8uoga"]
+[ext_resource type="Script" uid="uid://bnj51ommwc0kv" path="res://Scripts/BattleManager.gd" id="4_47u5s"]
+[ext_resource type="Script" uid="uid://cjcioq2fm3bbd" path="res://Scripts/TurnQueue.gd" id="5_2tp6q"]
+
+[node name="BattleScene" type="Node2D" unique_id=2067720617]
+script = ExtResource("1_hb1yk")
+
+[node name="HeroSprite" parent="." unique_id=766005803 instance=ExtResource("2_u810s")]
+position = Vector2(-231, 33)
+
+[node name="BattleManager" type="Node" parent="." unique_id=1446133905 node_paths=PackedStringArray("turn_queue")]
+script = ExtResource("4_47u5s")
+turn_queue = NodePath("../TurnQueue")
+
+[node name="TurnQueue" type="Node" parent="." unique_id=797149600]
+script = ExtResource("5_2tp6q")
+
+[node name="EnemySprite" parent="." unique_id=1135229011 instance=ExtResource("3_8uoga")]
+position = Vector2(87, -28)

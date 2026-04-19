@@ -1,3 +1,25 @@
 [gd_scene format=3 uid="uid://oovclq3a00nm"]
 
-[node name="EnemySprite" type="Node2D" unique_id=1135229011]
+[ext_resource type="Script" uid="uid://bof5wpydm7fdd" path="res://Scripts/CombatantSprite.gd" id="1_nxq3l"]
+[ext_resource type="Script" uid="uid://b2nb2ij58wmxg" path="res://Scripts/BaseEntity.gd" id="2_meaxh"]
+[ext_resource type="Texture2D" uid="uid://cmx5171wqwg6h" path="res://icon.svg" id="2_pdsmn"]
+[ext_resource type="Resource" uid="uid://1ua12cojo4kw" path="res://Resources/Limo.tres" id="4_pdsmn"]
+
+[node name="EnemySprite" type="Node2D" unique_id=1135229011 node_paths=PackedStringArray("entity_logic") groups=["Enemies"]]
+script = ExtResource("1_nxq3l")
+entity_logic = NodePath("Logic")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=211004938]
+modulate = Color(1, 0.101960786, 0.10980392, 1)
+position = Vector2(529, 296)
+texture = ExtResource("2_pdsmn")
+
+[node name="ProgressBar" type="ProgressBar" parent="." unique_id=701492247]
+offset_left = 527.0
+offset_top = 174.0
+offset_right = 531.0
+offset_bottom = 201.0
+
+[node name="Logic" type="Node" parent="." unique_id=1868502771]
+script = ExtResource("2_meaxh")
+stats = ExtResource("4_pdsmn")
