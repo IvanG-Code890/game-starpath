@@ -49,7 +49,7 @@ func advance_to_next_turn() -> void:
 	
 	# 3. Decidimos qué pasa según quién sea el atacante
 	# (Usamos grupos de Godot para saber si es héroe o enemigo)
-	if active_entity.is_in_group("Heroes"):
+	if active_entity.get_parent().is_in_group("Heroes"):
 		current_state = BattleState.PLAYER_INPUT
 		_log("Esperando tu orden...")
 		action_menu_toggled.emit(true) # Avisamos a la UI para que muestre botones
@@ -60,10 +60,19 @@ func advance_to_next_turn() -> void:
 
 func _execute_enemy_ai(enemy: BaseEntity) -> void:
 	_log("El enemigo " + enemy.stats.character_name + " está pensando...")
-	await get_tree().create_timer(1.5).timeout
+	await get_tree().create_timer(1.0).timeout
 	
 	_log(enemy.stats.character_name + " ataca ferozmente.")
-	# AQUÍ IRÁ EL ACTION PROCESSOR PARA APLICAR EL DAÑO
+	await get_tree().create_timer(0.5).timeout
+	
+	# 1. El enemigo busca al héroe
+	var target = _get_first_hero()
+	
+	# 2. Le aplica daño
+	if target:
+		var damage_dealt = enemy.stats.attack
+		target.take_damage(damage_dealt)
+		_log("¡Ay! " + target.stats.character_name + " recibe daño.")
 	
 	await get_tree().create_timer(1.0).timeout
 	advance_to_next_turn()
@@ -77,3 +86,38 @@ func _check_win_condition() -> bool:
 func _log(message: String) -> void:
 	print(message)
 	text_log_updated.emit(message)
+	
+# Función que llamaremos cuando el jugador pulse un botón
+func player_action_selected(action_name: String) -> void:
+	if current_state != BattleState.PLAYER_INPUT:
+		return 
+		
+	action_menu_toggled.emit(false) 
+	
+	# 1. Identificamos quién ataca y quién recibe 
+	var attacker = turn_queue.queue[turn_queue.active_index - 1] 
+	var defender = _get_first_enemy() 
+	
+	_log(attacker.stats.character_name + " usa " + action_name + "!")
+	await get_tree().create_timer(1.0).timeout
+	
+	# 2. El ataque del héroe se lo pasamos a la función de recibir daño del limo
+	if defender:
+		var damage_dealt = attacker.stats.attack
+		defender.take_damage(damage_dealt)
+		_log("¡PUM! " + defender.stats.character_name + " recibe daño.")
+	
+	await get_tree().create_timer(1.0).timeout
+	advance_to_next_turn()
+	
+func _get_first_enemy() -> BaseEntity:
+	for entity in turn_queue.queue:
+		if entity.get_parent().is_in_group("Enemies") and entity.is_alive:
+			return entity
+	return null
+
+func _get_first_hero() -> BaseEntity:
+	for entity in turn_queue.queue:
+		if entity.get_parent().is_in_group("Heroes") and entity.is_alive:
+			return entity
+	return null

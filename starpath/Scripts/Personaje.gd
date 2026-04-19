@@ -11,12 +11,12 @@ func _init(nombre_personaje: String, vida: int, poder_ataque: int):
 	ataque = poder_ataque
 
 # Función que calcula y aplica el daño
-func recibir_dano(cantidad: int):
+func get_damage(cantidad: int):
 	hp_actual -= cantidad
 	if hp_actual < 0:
 		hp_actual = 0
 	print(">>> " + nombre + " recibe " + str(cantidad) + " de daño. (HP: " + str(hp_actual) + ")")
 
 # Comprueba si el personaje ha caído
-func esta_vivo() -> bool:
+func is_alive() -> bool:
 	return hp_actual > 0

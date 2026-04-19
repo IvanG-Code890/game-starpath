@@ -14,3 +14,8 @@ func _ready() -> void:
 	
 	# Le damos al botón de inicio del BattleManager
 	battle_manager.start_battle(team_heroes, team_enemies)
+
+
+func _on_attack_button_pressed() -> void:
+	# Le pasamos la orden al BattleManager
+	battle_manager.player_action_selected("Atacar")
