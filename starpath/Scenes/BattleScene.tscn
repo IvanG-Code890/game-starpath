@@ -5,6 +5,9 @@
 [ext_resource type="PackedScene" uid="uid://oovclq3a00nm" path="res://Scenes/EnemySprite.tscn" id="3_8uoga"]
 [ext_resource type="Script" uid="uid://bnj51ommwc0kv" path="res://Scripts/BattleManager.gd" id="4_47u5s"]
 [ext_resource type="Script" uid="uid://cjcioq2fm3bbd" path="res://Scripts/TurnQueue.gd" id="5_2tp6q"]
+[ext_resource type="Script" uid="uid://cd7bdp4cvvyx1" path="res://Scripts/BattleHUD.gd" id="6_bhud"]
+[ext_resource type="PackedScene" uid="uid://bx05up8yryrmi" path="res://Scenes/Hero2Sprite.tscn" id="7_hero2"]
+[ext_resource type="PackedScene" uid="uid://b7hbaocp7rvuq" path="res://Scenes/Enemy2Sprite.tscn" id="8_enemy2"]
 
 [node name="BattleScene" type="Node2D" unique_id=2067720617]
 script = ExtResource("1_hb1yk")
@@ -22,17 +25,89 @@ script = ExtResource("5_2tp6q")
 [node name="EnemySprite" parent="." unique_id=1135229011 instance=ExtResource("3_8uoga")]
 position = Vector2(87, -28)
 
+[node name="Hero2Sprite" parent="." unique_id=320145720 instance=ExtResource("7_hero2")]
+position = Vector2(-231, 160)
+
+[node name="Enemy2Sprite" parent="." unique_id=320145721 instance=ExtResource("8_enemy2")]
+position = Vector2(87, 100)
+
+[node name="BattleHUD" type="CanvasLayer" parent="." unique_id=320145690]
+script = ExtResource("6_bhud")
+
+[node name="Container" type="VBoxContainer" parent="BattleHUD" unique_id=320145691]
+offset_left = 870.0
+offset_top = 50.0
+offset_right = 1140.0
+offset_bottom = 600.0
+theme_override_constants/separation = 4
+
 [node name="BattleUI" type="CanvasLayer" parent="." unique_id=1536480596]
 
 [node name="VBoxContainer" type="VBoxContainer" parent="BattleUI" unique_id=1314894546]
-offset_left = 454.0
-offset_top = 486.0
-offset_right = 494.0
-offset_bottom = 526.0
+offset_left = 20.0
+offset_top = 450.0
+offset_right = 180.0
+offset_bottom = 490.0
+theme_override_constants/separation = 2
 
 [node name="AttackButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=218713054]
 layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
 text = "Atacar"
+
+[node name="CurarButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145680]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+text = "Curar (15 MP)"
+
+[node name="DefenderButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145681]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+text = "Defender"
+
+[node name="MagiaButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145682]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+text = "Magia ▶"
+
+[node name="ObjetosButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145792]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+text = "Objetos ▶"
+
+[node name="CancelarButton" type="Button" parent="BattleUI" unique_id=320145800]
+visible = false
+offset_left = 20.0
+offset_top = 412.0
+offset_right = 180.0
+offset_bottom = 447.0
+text = "Cancelar"
+
+[node name="SkillsPanel" type="PanelContainer" parent="BattleUI" unique_id=320145793]
+visible = false
+offset_left = 80.0
+offset_top = 470.0
+offset_right = 320.0
+offset_bottom = 500.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/SkillsPanel" unique_id=320145794]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ObjetosPanel" type="PanelContainer" parent="BattleUI" unique_id=320145795]
+visible = false
+offset_left = 80.0
+offset_top = 470.0
+offset_right = 320.0
+offset_bottom = 500.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ObjetosPanel" unique_id=320145796]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="LblSinObjetos" type="Label" parent="BattleUI/ObjetosPanel/VBoxContainer" unique_id=320145797]
+layout_mode = 2
+text = "Sin objetos"
 
 [node name="Panel" type="Panel" parent="BattleUI" unique_id=98372456]
 offset_top = -27.0
@@ -56,4 +131,10 @@ text = "Resultado"
 layout_mode = 2
 text = "Volver a jugar"
 
+[connection signal="pressed" from="BattleUI/CancelarButton" to="." method="_on_btn_cancelar_pressed"]
 [connection signal="pressed" from="BattleUI/VBoxContainer/AttackButton" to="." method="_on_btn_atacar_pressed"]
+[connection signal="pressed" from="BattleUI/VBoxContainer/CurarButton" to="." method="_on_btn_curar_pressed"]
+[connection signal="pressed" from="BattleUI/VBoxContainer/DefenderButton" to="." method="_on_btn_defender_pressed"]
+[connection signal="pressed" from="BattleUI/VBoxContainer/MagiaButton" to="." method="_on_btn_magia_pressed"]
+[connection signal="pressed" from="BattleUI/VBoxContainer/ObjetosButton" to="." method="_on_btn_objetos_pressed"]
+[connection signal="pressed" from="BattleUI/Panel/VBoxContainer/BtnReplay" to="." method="_on_btn_reiniciar_pressed"]

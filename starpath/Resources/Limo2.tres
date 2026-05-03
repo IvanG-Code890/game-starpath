@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://climo2000001"]
+
+[ext_resource type="Script" uid="uid://tbrn0mdsnx0t" path="res://Scripts/CharacterStats.gd" id="1_w3wub"]
+
+[resource]
+script = ExtResource("1_w3wub")
+metadata/_custom_type_script = "uid://tbrn0mdsnx0t"
+character_name = "Limo Jefe"
+max_hp = 80
+max_mp = 20
+attack = 15
+defense = 8
+speed = 12

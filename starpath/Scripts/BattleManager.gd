@@ -2,8 +2,12 @@ class_name BattleManager
 extends Node
 
 # ── Máquina de Estados ─────────────────────────────────────────────────────
-enum BattleState { STARTING, NEXT_TURN, PLAYER_INPUT, ENEMY_TURN, WON, LOST }
+enum BattleState { STARTING, NEXT_TURN, PLAYER_INPUT, SELECTING_TARGET, ENEMY_TURN, WON, LOST }
 var current_state: BattleState = BattleState.STARTING
+
+var _pending_attacker: BaseEntity = null
+var _pending_skill: SkillData     = null
+var _pending_item: ItemData       = null
 
 # ── Referencias a los componentes de Lógica ────────────────────────────────
 @export var turn_queue: TurnQueue
@@ -12,6 +16,9 @@ var current_state: BattleState = BattleState.STARTING
 signal text_log_updated(message: String)
 signal action_menu_toggled(show: bool)
 signal battle_ended(player_won: bool)
+signal active_entity_changed(entity: BaseEntity)
+signal target_selection_needed(enemies: Array[BaseEntity])
+signal ally_target_selection_needed(allies: Array[BaseEntity])
 
 func _ready() -> void:
 	if not turn_queue:
@@ -45,7 +52,8 @@ func advance_to_next_turn() -> void:
 	# 2. Pedimos a la cola de turnos quién va ahora
 	var active_entity = turn_queue.get_next_entity()
 	_log("Es el turno de: " + active_entity.stats.character_name)
-	
+	active_entity_changed.emit(active_entity)
+
 	await get_tree().create_timer(0.5).timeout
 	
 	# 3. Decidimos qué pasa según quién sea el atacante
@@ -80,24 +88,121 @@ func _execute_enemy_ai(enemy: BaseEntity) -> void:
 func player_action_selected(action_name: String) -> void:
 	if current_state != BattleState.PLAYER_INPUT:
 		return
-		
-	action_menu_toggled.emit(false)
-	
-	# 1. Identificamos quién ataca y quién recibe
+
 	var attacker = turn_queue.queue[turn_queue.active_index - 1]
-	var defender = _get_first_enemy()
-	
+
+	if action_name == "Atacar":
+		action_menu_toggled.emit(false)
+		_start_target_selection(attacker, null)
+		return  # La ejecución continúa en player_target_confirmed()
+
+	# Acciones sin objetivo → ejecutar directamente
+	action_menu_toggled.emit(false)
 	_log(attacker.stats.character_name + " usa " + action_name + "!")
 	await get_tree().create_timer(1.0).timeout
-	
-	# 2. El ataque del héroe se lo pasamos a la función de recibir daño del limo
-	if defender:
-		var damage_dealt = attacker.stats.attack
-		defender.take_damage(damage_dealt)
-		_log("¡PUM! " + defender.stats.character_name + " recibe daño.")
-	
+
+	if action_name == "Curar":
+		var success = attacker.heal_self()
+		if success:
+			_log(attacker.stats.character_name + " se cura y recupera HP.")
+		else:
+			_log("¡MP insuficiente para curar!")
+	elif action_name == "Defender":
+		attacker.start_defending()
+		_log(attacker.stats.character_name + " se pone en guardia.")
+
 	await get_tree().create_timer(1.0).timeout
 	advance_to_next_turn()
+
+# Llamado desde BattleScene cuando el jugador elige un hechizo del submenu.
+func player_skill_selected(skill: SkillData) -> void:
+	if current_state != BattleState.PLAYER_INPUT:
+		return
+
+	var attacker = turn_queue.queue[turn_queue.active_index - 1]
+	action_menu_toggled.emit(false)
+
+	if skill.targets_enemy:
+		_start_target_selection(attacker, skill)
+	else:
+		# Hechizo de apoyo sin objetivo (curación mágica, buff, etc.)
+		_log(attacker.stats.character_name + " lanza " + skill.skill_name + "!")
+		await get_tree().create_timer(1.0).timeout
+		if attacker.spend_mp(skill.mp_cost):
+			attacker.heal_self(-skill.damage, 0)  # daño negativo = curación
+		else:
+			_log("¡MP insuficiente!")
+		await get_tree().create_timer(1.0).timeout
+		advance_to_next_turn()
+
+# El jugador ha elegido un objetivo en el panel de selección.
+func player_target_confirmed(target: BaseEntity) -> void:
+	if current_state != BattleState.SELECTING_TARGET:
+		return
+
+	current_state = BattleState.PLAYER_INPUT
+	target_selection_needed.emit([])
+	ally_target_selection_needed.emit([])
+
+	var attacker = _pending_attacker
+	var skill    = _pending_skill
+	var item     = _pending_item
+	_pending_item = null
+
+	if item != null:
+		_log(attacker.stats.character_name + " usa " + item.item_name + " en " + target.stats.character_name + "!")
+		await get_tree().create_timer(1.0).timeout
+		Inventory.use_item(item)
+		match item.effect_type:
+			"heal_hp":
+				target.heal_hp(item.amount)
+				_log(target.stats.character_name + " recupera " + str(item.amount) + " HP.")
+			"heal_mp":
+				target.heal_mp(item.amount)
+				_log(target.stats.character_name + " recupera " + str(item.amount) + " MP.")
+			"damage":
+				target.take_damage(item.amount)
+				_log("¡" + item.item_name + "! " + target.stats.character_name + " recibe daño.")
+	elif skill != null:
+		_log(attacker.stats.character_name + " lanza " + skill.skill_name + "!")
+		await get_tree().create_timer(1.0).timeout
+		if attacker.spend_mp(skill.mp_cost):
+			target.take_damage(skill.damage)
+			_log("¡" + skill.skill_name + "! " + target.stats.character_name + " recibe daño mágico.")
+		else:
+			_log("¡MP insuficiente para " + skill.skill_name + "!")
+	else:
+		_log(attacker.stats.character_name + " ataca a " + target.stats.character_name + "!")
+		await get_tree().create_timer(1.0).timeout
+		target.take_damage(attacker.stats.attack)
+		_log("¡PUM! " + target.stats.character_name + " recibe daño.")
+
+	await get_tree().create_timer(1.0).timeout
+	advance_to_next_turn()
+
+func player_item_selected(item: ItemData) -> void:
+	if current_state != BattleState.PLAYER_INPUT:
+		return
+	var attacker = turn_queue.queue[turn_queue.active_index - 1]
+	action_menu_toggled.emit(false)
+	_pending_attacker = attacker
+	_pending_item     = item
+	_pending_skill    = null
+	current_state     = BattleState.SELECTING_TARGET
+	if item.targets_enemy:
+		target_selection_needed.emit(_get_alive_enemies())
+	else:
+		ally_target_selection_needed.emit(_get_alive_heroes())
+
+# El jugador cancela la selección de objetivo y vuelve al menú.
+func player_target_cancelled() -> void:
+	if current_state != BattleState.SELECTING_TARGET:
+		return
+	_pending_item = null
+	current_state = BattleState.PLAYER_INPUT
+	target_selection_needed.emit([])
+	ally_target_selection_needed.emit([])
+	action_menu_toggled.emit(true)
 
 # ── COMPROBACIÓN DE VICTORIA/DERROTA ───────────────────────────────────────
 
@@ -131,11 +236,31 @@ func _log(message: String) -> void:
 	print(message)
 	text_log_updated.emit(message)
 	
+func _start_target_selection(attacker: BaseEntity, skill: SkillData) -> void:
+	current_state    = BattleState.SELECTING_TARGET
+	_pending_attacker = attacker
+	_pending_skill    = skill
+	target_selection_needed.emit(_get_alive_enemies())
+
+func _get_alive_enemies() -> Array[BaseEntity]:
+	var result: Array[BaseEntity] = []
+	for entity in turn_queue.queue:
+		if entity.get_parent().is_in_group("Enemies") and entity.is_alive:
+			result.append(entity)
+	return result
+
 func _get_first_enemy() -> BaseEntity:
 	for entity in turn_queue.queue:
 		if entity.get_parent().is_in_group("Enemies") and entity.is_alive:
 			return entity
 	return null
+
+func _get_alive_heroes() -> Array[BaseEntity]:
+	var result: Array[BaseEntity] = []
+	for entity in turn_queue.queue:
+		if entity.get_parent().is_in_group("Heroes") and entity.is_alive:
+			result.append(entity)
+	return result
 
 func _get_first_hero() -> BaseEntity:
 	for entity in turn_queue.queue:

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://dl7te7i6vt4rx"]
+[gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://chero2000001"]
 
 [ext_resource type="Script" uid="uid://tbrn0mdsnx0t" path="res://Scripts/CharacterStats.gd" id="1_c0c88"]
 [ext_resource type="Resource" uid="uid://cskfuego1001" path="res://Resources/Fuego.tres" id="2_fuego"]
@@ -7,4 +7,10 @@
 [resource]
 script = ExtResource("1_c0c88")
 metadata/_custom_type_script = "uid://tbrn0mdsnx0t"
+character_name = "Guerrero"
+max_hp = 150
+max_mp = 30
+attack = 25
+defense = 15
+speed = 10
 skills = [ExtResource("2_fuego"), ExtResource("3_rayo")]
