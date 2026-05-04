@@ -9,12 +9,32 @@ extends Node2D
 
 @onready var menu_combate     = $BattleUI/VBoxContainer
 @onready var cancel_btn       = $BattleUI/CancelarButton
+@onready var curar_btn        = $BattleUI/VBoxContainer/CurarButton
+@onready var magia_btn        = $BattleUI/VBoxContainer/MagiaButton
 @onready var skills_panel     = $BattleUI/SkillsPanel
 @onready var skills_container = $BattleUI/SkillsPanel/VBoxContainer
 @onready var objetos_panel      = $BattleUI/ObjetosPanel
 @onready var objetos_container  = $BattleUI/ObjetosPanel/VBoxContainer
 @onready var end_panel        = $BattleUI/Panel
 @onready var result_label     = $BattleUI/Panel/VBoxContainer/LblResolution
+
+var _active_hero: BaseEntity = null
+
+# Nombres de clase para el botón de habilidades
+const CLASS_NAMES := {
+	0: "Guerrero",
+	1: "Mago",
+	2: "Pícaro",
+	3: "Sanador",
+	4: "Paladín",
+	5: "Arquero"
+}
+
+# Clases que tienen panel de habilidades mágicas
+const MAGIC_CLASSES := [
+	CharacterStats.ClassType.MAGO,
+	CharacterStats.ClassType.SANADOR
+]
 
 func _ready() -> void:
 	print("--- CARGANDO ESCENA DE BATALLA ---")
@@ -28,6 +48,7 @@ func _ready() -> void:
 	battle_manager.action_menu_toggled.connect(_on_menu_toggled)
 	battle_manager.battle_ended.connect(_on_battle_ended)
 	battle_manager.active_entity_changed.connect(battle_hud.set_active_entity)
+	battle_manager.active_entity_changed.connect(_on_active_entity_changed)
 	battle_manager.target_selection_needed.connect(_on_target_selection_needed)
 	battle_manager.ally_target_selection_needed.connect(_on_ally_target_selection_needed)
 
@@ -35,15 +56,46 @@ func _ready() -> void:
 	var team_enemies: Array[BaseEntity] = [enemy_logic, enemy2_logic]
 
 	battle_hud.setup(team_heroes)
-	_build_skill_buttons()
 	battle_manager.start_battle(team_heroes, team_enemies)
 
-func _build_skill_buttons() -> void:
-	for skill: SkillData in hero_logic.stats.skills:
+# ── Seguimiento del héroe activo ──────────────────────────────────────────────
+
+func _on_active_entity_changed(entity: BaseEntity) -> void:
+	if entity.get_parent().is_in_group("Heroes"):
+		_active_hero = entity
+
+# ── Actualización del menú según la clase del héroe ──────────────────────────
+
+func _update_menu_for_hero(hero: BaseEntity) -> void:
+	if hero == null:
+		return
+
+	var class_id: int = hero.stats.character_class
+	var class_label: String = CLASS_NAMES.get(class_id, "Héroe")
+
+	# Botón de habilidades: solo Mago y Sanador
+	var has_skills: bool = class_id in MAGIC_CLASSES
+	magia_btn.visible = has_skills
+	if has_skills:
+		magia_btn.text = "Hab. de %s ▶" % class_label
+
+	# Curar: solo Sanador
+	curar_btn.visible = (class_id == CharacterStats.ClassType.SANADOR)
+
+	# Reconstruir botones de habilidades para este héroe
+	_build_skill_buttons(hero)
+
+func _build_skill_buttons(hero: BaseEntity) -> void:
+	for child in skills_container.get_children():
+		child.queue_free()
+	for skill: SkillData in hero.stats.skills:
 		var btn := Button.new()
 		btn.text = "%s  (%d MP)" % [skill.skill_name, skill.mp_cost]
+		btn.custom_minimum_size = Vector2(160, 0)
 		btn.pressed.connect(_on_skill_btn_pressed.bind(skill))
 		skills_container.add_child(btn)
+
+# ── Señales del BattleManager ─────────────────────────────────────────────────
 
 func _on_menu_toggled(show_menu: bool) -> void:
 	if not end_panel.visible:
@@ -53,6 +105,7 @@ func _on_menu_toggled(show_menu: bool) -> void:
 			objetos_panel.visible = false
 		else:
 			cancel_btn.visible = false
+			_update_menu_for_hero(_active_hero)
 
 func _on_target_selection_needed(enemies: Array[BaseEntity]) -> void:
 	for entity in [enemy_logic, enemy2_logic]:
@@ -97,6 +150,8 @@ func _on_ally_sprite_clicked(entity: BaseEntity) -> void:
 
 func _on_enemy_sprite_clicked(entity: BaseEntity) -> void:
 	battle_manager.player_target_confirmed(entity)
+
+# ── Botones del menú ──────────────────────────────────────────────────────────
 
 func _on_btn_atacar_pressed() -> void:
 	battle_manager.player_action_selected("Atacar")

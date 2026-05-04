@@ -73,14 +73,17 @@ func _execute_enemy_ai(enemy: BaseEntity) -> void:
 	_log(enemy.stats.character_name + " ataca ferozmente.")
 	await get_tree().create_timer(0.5).timeout
 	
-	# 1. El enemigo busca al héroe
-	var target = _get_first_hero()
-	
+	# 1. El enemigo elige un héroe vivo al azar
+	var alive_heroes = _get_alive_heroes()
+	if alive_heroes.is_empty():
+		advance_to_next_turn()
+		return
+	var target = alive_heroes[randi() % alive_heroes.size()]
+
 	# 2. Le aplica daño
-	if target:
-		var damage_dealt = enemy.stats.attack
-		target.take_damage(damage_dealt)
-		_log("¡Ay! " + target.stats.character_name + " recibe daño.")
+	var damage_dealt = enemy.stats.attack
+	target.take_damage(damage_dealt)
+	_log(enemy.stats.character_name + " ataca a " + target.stats.character_name + ". ¡Ay!")
 	
 	await get_tree().create_timer(1.0).timeout
 	advance_to_next_turn()
@@ -141,8 +144,9 @@ func player_target_confirmed(target: BaseEntity) -> void:
 		return
 
 	current_state = BattleState.PLAYER_INPUT
-	target_selection_needed.emit([])
-	ally_target_selection_needed.emit([])
+	var _empty: Array[BaseEntity] = []
+	target_selection_needed.emit(_empty)
+	ally_target_selection_needed.emit(_empty)
 
 	var attacker = _pending_attacker
 	var skill    = _pending_skill
@@ -167,8 +171,9 @@ func player_target_confirmed(target: BaseEntity) -> void:
 		_log(attacker.stats.character_name + " lanza " + skill.skill_name + "!")
 		await get_tree().create_timer(1.0).timeout
 		if attacker.spend_mp(skill.mp_cost):
-			target.take_damage(skill.damage)
-			_log("¡" + skill.skill_name + "! " + target.stats.character_name + " recibe daño mágico.")
+			target.take_damage(skill.damage, skill.is_magical)
+			var tipo = "mágico" if skill.is_magical else "físico"
+			_log("¡" + skill.skill_name + "! " + target.stats.character_name + " recibe daño " + tipo + ".")
 		else:
 			_log("¡MP insuficiente para " + skill.skill_name + "!")
 	else:
@@ -200,8 +205,9 @@ func player_target_cancelled() -> void:
 		return
 	_pending_item = null
 	current_state = BattleState.PLAYER_INPUT
-	target_selection_needed.emit([])
-	ally_target_selection_needed.emit([])
+	var _empty: Array[BaseEntity] = []
+	target_selection_needed.emit(_empty)
+	ally_target_selection_needed.emit(_empty)
 	action_menu_toggled.emit(true)
 
 # ── COMPROBACIÓN DE VICTORIA/DERROTA ───────────────────────────────────────

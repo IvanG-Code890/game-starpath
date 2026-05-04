@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SkillData" format=3 uid="uid://cskfuego1001"]
+
+[ext_resource type="Script" uid="uid://knxc2hn10nsh" path="res://Scripts/SkillData.gd" id="1_skill"]
+
+[resource]
+script = ExtResource("1_skill")
+skill_name = "Fuego"
+damage = 25
+mp_cost = 10
+targets_enemy = true
+is_magical = true

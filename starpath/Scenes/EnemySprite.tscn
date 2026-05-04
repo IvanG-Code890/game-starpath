@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bof5wpydm7fdd" path="res://Scripts/CombatantSprite.gd" id="1_nxq3l"]
 [ext_resource type="Script" uid="uid://b2nb2ij58wmxg" path="res://Scripts/BaseEntity.gd" id="2_meaxh"]
 [ext_resource type="Texture2D" uid="uid://cmx5171wqwg6h" path="res://icon.svg" id="2_pdsmn"]
-[ext_resource type="Resource" uid="uid://1ua12cojo4kw" path="res://Resources/Limo.tres" id="4_pdsmn"]
+[ext_resource type="Resource" uid="uid://1ua12cojo4kw" path="res://Resources/Enemies/Limo.tres" id="4_pdsmn"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_click"]
 size = Vector2(128, 128)

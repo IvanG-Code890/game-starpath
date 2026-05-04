@@ -17,10 +17,14 @@ func _ready():
 		current_hp = stats.max_hp
 		current_mp = stats.max_mp
 
-func take_damage(amount: int):
-	var effective_damage = max(1, amount - (stats.defense / 2))
+func take_damage(amount: int, is_magical: bool = false):
+	var effective_damage: int
+	if is_magical:
+		effective_damage = max(1, amount)
+	else:
+		effective_damage = max(1, amount - (stats.defense >> 1))
 	if is_defending:
-		effective_damage = max(1, effective_damage / 2)
+		effective_damage = max(1, effective_damage >> 1)
 		is_defending = false
 		defense_changed.emit(false)
 	current_hp = max(0, current_hp - effective_damage)

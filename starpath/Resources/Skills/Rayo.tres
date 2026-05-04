@@ -8,3 +8,4 @@ skill_name = "Rayo"
 damage = 40
 mp_cost = 20
 targets_enemy = true
+is_magical = true

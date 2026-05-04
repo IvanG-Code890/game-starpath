@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://cmx5171wqwg6h" path="res://icon.svg" id="1_3y3mh"]
 [ext_resource type="Script" uid="uid://bof5wpydm7fdd" path="res://Scripts/CombatantSprite.gd" id="1_uysmh"]
 [ext_resource type="Script" uid="uid://b2nb2ij58wmxg" path="res://Scripts/BaseEntity.gd" id="3_a3f3h"]
-[ext_resource type="Resource" uid="uid://chero2000001" path="res://Resources/Hero2.tres" id="4_hero2"]
+[ext_resource type="Resource" uid="uid://chero2000001" path="res://Resources/Characters/Hero2.tres" id="4_hero2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_click"]
 size = Vector2(128, 128)
