@@ -1,0 +1,60 @@
+[gd_scene format=3 uid="uid://bworldmap0001"]
+
+[ext_resource type="Script" uid="uid://bacyydqfv6kep" path="res://Scenes/WorldMap.gd" id="1_wm"]
+[ext_resource type="Texture2D" uid="uid://k2rfwre560in" path="res://Assets/Tilesets/map1.png" id="2_5wnfc"]
+[ext_resource type="PackedScene" uid="uid://bplayerlyra01" path="res://Scenes/Player.tscn" id="2_pl"]
+[ext_resource type="PackedScene" uid="uid://pausemenu0001" path="res://Scenes/PauseMenu.tscn" id="4_pm"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_left"]
+size = Vector2(20, 1940)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_top"]
+size = Vector2(1940, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bottom"]
+size = Vector2(1940, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_battle"]
+size = Vector2(800, 1940)
+
+[node name="WorldMap" type="Node2D" unique_id=434354755]
+script = ExtResource("1_wm")
+
+[node name="Player" parent="." unique_id=1065559040 instance=ExtResource("2_pl")]
+position = Vector2(-380, -180)
+
+[node name="Limites" type="Node2D" parent="." unique_id=1987930665]
+
+[node name="ParedIzquierda" type="StaticBody2D" parent="Limites" unique_id=741078239]
+position = Vector2(-970, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Limites/ParedIzquierda" unique_id=1328412007]
+shape = SubResource("RectangleShape2D_left")
+
+[node name="ParedArriba" type="StaticBody2D" parent="Limites" unique_id=1976894892]
+position = Vector2(0, -970)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Limites/ParedArriba" unique_id=856155152]
+shape = SubResource("RectangleShape2D_top")
+
+[node name="ParedAbajo" type="StaticBody2D" parent="Limites" unique_id=1966929390]
+position = Vector2(0, 970)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Limites/ParedAbajo" unique_id=1216957860]
+shape = SubResource("RectangleShape2D_bottom")
+
+[node name="BattleZones" type="Node2D" parent="." unique_id=435073867]
+
+[node name="ZonaCombate" type="Area2D" parent="BattleZones" unique_id=888833223]
+position = Vector2(560, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BattleZones/ZonaCombate" unique_id=885776343]
+shape = SubResource("RectangleShape2D_battle")
+
+[node name="NPCs" type="Node2D" parent="." unique_id=1380659010]
+
+[node name="PauseMenu" parent="." instance=ExtResource("4_pm")]
+
+[node name="Fondo" type="Sprite2D" parent="." unique_id=1524736500]
+z_index = -1
+texture = ExtResource("2_5wnfc")

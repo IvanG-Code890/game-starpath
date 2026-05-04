@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Starpath"
-run/main_scene="uid://1oxeodtlv3o8"
+run/main_scene="uid://bworldmap0001"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -27,3 +27,4 @@ Inventory="*res://Scripts/Inventory.gd"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.22, 0.42, 0.18, 1)

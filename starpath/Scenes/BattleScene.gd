@@ -2,7 +2,6 @@ extends Node2D
 
 @onready var battle_manager = $BattleManager
 @onready var hero_logic     = $HeroSprite/Logic
-@onready var hero2_logic    = $Hero2Sprite/Logic
 @onready var enemy_logic    = $EnemySprite/Logic
 @onready var enemy2_logic   = $Enemy2Sprite/Logic
 @onready var battle_hud     = $BattleHUD
@@ -17,8 +16,10 @@ extends Node2D
 @onready var objetos_container  = $BattleUI/ObjetosPanel/VBoxContainer
 @onready var end_panel        = $BattleUI/Panel
 @onready var result_label     = $BattleUI/Panel/VBoxContainer/LblResolution
+@onready var replay_btn       = $BattleUI/Panel/VBoxContainer/BtnReplay
 
 var _active_hero: BaseEntity = null
+var _player_won: bool = false
 
 # Nombres de clase para el botón de habilidades
 const CLASS_NAMES := {
@@ -52,7 +53,7 @@ func _ready() -> void:
 	battle_manager.target_selection_needed.connect(_on_target_selection_needed)
 	battle_manager.ally_target_selection_needed.connect(_on_ally_target_selection_needed)
 
-	var team_heroes:  Array[BaseEntity] = [hero_logic, hero2_logic]
+	var team_heroes:  Array[BaseEntity] = [hero_logic]
 	var team_enemies: Array[BaseEntity] = [enemy_logic, enemy2_logic]
 
 	battle_hud.setup(team_heroes)
@@ -127,7 +128,7 @@ func _on_target_selection_needed(enemies: Array[BaseEntity]) -> void:
 	cancel_btn.visible = true
 
 func _on_ally_target_selection_needed(allies: Array[BaseEntity]) -> void:
-	for entity in [hero_logic, hero2_logic]:
+	for entity in [hero_logic]:
 		var s := entity.get_parent() as CombatantSprite
 		if s:
 			s.is_selectable = false
@@ -209,9 +210,18 @@ func _on_skill_btn_pressed(skill: SkillData) -> void:
 	battle_manager.player_skill_selected(skill)
 
 func _on_battle_ended(player_won: bool) -> void:
+	_player_won          = player_won
 	menu_combate.visible = false
 	end_panel.visible    = true
-	result_label.text    = "¡VICTORIA!" if player_won else "DERROTA..."
+	if player_won:
+		result_label.text = "¡VICTORIA!"
+		replay_btn.text   = "Volver al mapa"
+	else:
+		result_label.text = "DERROTA..."
+		replay_btn.text   = "Reintentar"
 
 func _on_btn_reiniciar_pressed() -> void:
-	get_tree().reload_current_scene()
+	if _player_won:
+		get_tree().change_scene_to_file("res://Scenes/WorldMap.tscn")
+	else:
+		get_tree().reload_current_scene()

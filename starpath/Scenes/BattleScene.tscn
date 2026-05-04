@@ -6,7 +6,6 @@
 [ext_resource type="Script" uid="uid://bnj51ommwc0kv" path="res://Scripts/BattleManager.gd" id="4_47u5s"]
 [ext_resource type="Script" uid="uid://cjcioq2fm3bbd" path="res://Scripts/TurnQueue.gd" id="5_2tp6q"]
 [ext_resource type="Script" uid="uid://cd7bdp4cvvyx1" path="res://Scripts/BattleHUD.gd" id="6_bhud"]
-[ext_resource type="PackedScene" uid="uid://bx05up8yryrmi" path="res://Scenes/Hero2Sprite.tscn" id="7_hero2"]
 [ext_resource type="PackedScene" uid="uid://b7hbaocp7rvuq" path="res://Scenes/Enemy2Sprite.tscn" id="8_enemy2"]
 
 [node name="BattleScene" type="Node2D" unique_id=2067720617]
@@ -24,9 +23,6 @@ script = ExtResource("5_2tp6q")
 
 [node name="EnemySprite" parent="." unique_id=1135229011 instance=ExtResource("3_8uoga")]
 position = Vector2(87, -28)
-
-[node name="Hero2Sprite" parent="." unique_id=320145720 instance=ExtResource("7_hero2")]
-position = Vector2(-231, 160)
 
 [node name="Enemy2Sprite" parent="." unique_id=320145721 instance=ExtResource("8_enemy2")]
 position = Vector2(87, 100)
