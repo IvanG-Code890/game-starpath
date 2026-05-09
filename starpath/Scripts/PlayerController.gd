@@ -50,11 +50,20 @@ func _setup_animations(sprite_texture: Texture2D) -> void:
 		frames.add_frame(idle, idle_atlas)
 
 	anim_sprite.sprite_frames = frames
+	# Sube el sprite 16 px para que el origen del CharacterBody2D quede en los pies.
+	# Así el punto de comparación del Y-sort es la base del personaje, no su centro.
+	anim_sprite.offset = Vector2(0, -16)
 	anim_sprite.play("idle_down")
 
 # ── Movimiento y animación ────────────────────────────────────────────────────
 
 func _physics_process(_delta: float) -> void:
+	# Bloquear movimiento mientras hay un diálogo o tienda abiertos
+	if DialogManager.is_open or ShopManager.is_open:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+
 	var dir := Vector2(
 		Input.get_axis("ui_left", "ui_right"),
 		Input.get_axis("ui_up", "ui_down")

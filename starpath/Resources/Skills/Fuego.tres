@@ -7,5 +7,4 @@ script = ExtResource("1_skill")
 skill_name = "Fuego"
 damage = 25
 mp_cost = 10
-targets_enemy = true
 is_magical = true

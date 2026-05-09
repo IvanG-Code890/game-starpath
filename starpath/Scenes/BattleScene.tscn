@@ -47,28 +47,28 @@ offset_bottom = 490.0
 theme_override_constants/separation = 2
 
 [node name="AttackButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=218713054]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
 text = "Atacar"
 
 [node name="CurarButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145680]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
 text = "Curar (15 MP)"
 
 [node name="DefenderButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145681]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
 text = "Defender"
 
 [node name="MagiaButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145682]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
 text = "Magia ▶"
 
 [node name="ObjetosButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145792]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
 text = "Objetos ▶"
 
 [node name="CancelarButton" type="Button" parent="BattleUI" unique_id=320145800]
@@ -127,10 +127,10 @@ text = "Resultado"
 layout_mode = 2
 text = "Volver a jugar"
 
-[connection signal="pressed" from="BattleUI/CancelarButton" to="." method="_on_btn_cancelar_pressed"]
 [connection signal="pressed" from="BattleUI/VBoxContainer/AttackButton" to="." method="_on_btn_atacar_pressed"]
 [connection signal="pressed" from="BattleUI/VBoxContainer/CurarButton" to="." method="_on_btn_curar_pressed"]
 [connection signal="pressed" from="BattleUI/VBoxContainer/DefenderButton" to="." method="_on_btn_defender_pressed"]
 [connection signal="pressed" from="BattleUI/VBoxContainer/MagiaButton" to="." method="_on_btn_magia_pressed"]
 [connection signal="pressed" from="BattleUI/VBoxContainer/ObjetosButton" to="." method="_on_btn_objetos_pressed"]
+[connection signal="pressed" from="BattleUI/CancelarButton" to="." method="_on_btn_cancelar_pressed"]
 [connection signal="pressed" from="BattleUI/Panel/VBoxContainer/BtnReplay" to="." method="_on_btn_reiniciar_pressed"]

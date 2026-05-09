@@ -8,10 +8,6 @@
 
 config_version=5
 
-[animation]
-
-compatibility/default_parent_skeleton_in_mesh_instance_3d=true
-
 [application]
 
 config/name="Starpath"
@@ -22,6 +18,12 @@ config/icon="res://icon.svg"
 [autoload]
 
 Inventory="*res://Scripts/Inventory.gd"
+DialogManager="*res://Scripts/DialogManager.gd"
+ShopManager="*res://Scripts/ShopManager.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/YATI/plugin.cfg")
 
 [rendering]
 

@@ -1,17 +1,17 @@
 [gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://chero2000001"]
 
 [ext_resource type="Script" uid="uid://tbrn0mdsnx0t" path="res://Scripts/CharacterStats.gd" id="1_c0c88"]
+[ext_resource type="Script" uid="uid://knxc2hn10nsh" path="res://Scripts/SkillData.gd" id="2_adov2"]
 [ext_resource type="Resource" uid="uid://cskgolpe10001" path="res://Resources/Skills/GolpeBrutal.tres" id="2_golpe"]
-[ext_resource type="Resource" uid="uid://cskfortal10001" path="res://Resources/Skills/Fortaleza.tres" id="3_fortaleza"]
+[ext_resource type="Resource" uid="uid://bjgjsk12mkrc7" path="res://Resources/Skills/Fortaleza.tres" id="3_fortaleza"]
 
 [resource]
 script = ExtResource("1_c0c88")
-metadata/_custom_type_script = "uid://tbrn0mdsnx0t"
 character_name = "Bran"
-character_class = 0
 max_hp = 160
 max_mp = 30
 attack = 30
 defense = 18
 speed = 8
-skills = [ExtResource("2_golpe"), ExtResource("3_fortaleza")]
+skills = Array[ExtResource("2_adov2")]([ExtResource("2_golpe"), ExtResource("3_fortaleza")])
+metadata/_custom_type_script = "uid://tbrn0mdsnx0t"

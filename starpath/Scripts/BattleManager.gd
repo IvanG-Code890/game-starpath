@@ -179,7 +179,8 @@ func player_target_confirmed(target: BaseEntity) -> void:
 	else:
 		_log(attacker.stats.character_name + " ataca a " + target.stats.character_name + "!")
 		await get_tree().create_timer(1.0).timeout
-		target.take_damage(attacker.stats.attack)
+		var equip_bonus := Inventory.get_attack_bonus() if attacker.get_parent().is_in_group("Heroes") else 0
+		target.take_damage(attacker.stats.attack + equip_bonus)
 		_log("¡PUM! " + target.stats.character_name + " recibe daño.")
 
 	await get_tree().create_timer(1.0).timeout

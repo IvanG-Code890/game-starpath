@@ -8,4 +8,3 @@ skill_name = "Fortaleza"
 damage = -40
 mp_cost = 8
 targets_enemy = false
-is_magical = false

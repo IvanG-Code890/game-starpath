@@ -2,11 +2,11 @@
 
 [ext_resource type="Script" uid="uid://tbrn0mdsnx0t" path="res://Scripts/CharacterStats.gd" id="1_c0c88"]
 [ext_resource type="Resource" uid="uid://cskfuego1001" path="res://Resources/Skills/Fuego.tres" id="2_fuego"]
+[ext_resource type="Script" uid="uid://knxc2hn10nsh" path="res://Scripts/SkillData.gd" id="2_up8ex"]
 [ext_resource type="Resource" uid="uid://cskrayo10001" path="res://Resources/Skills/Rayo.tres" id="3_rayo"]
 
 [resource]
 script = ExtResource("1_c0c88")
-metadata/_custom_type_script = "uid://tbrn0mdsnx0t"
 character_name = "Lyra"
 character_class = 1
 max_hp = 80
@@ -14,4 +14,5 @@ max_mp = 100
 attack = 12
 defense = 5
 speed = 14
-skills = [ExtResource("2_fuego"), ExtResource("3_rayo")]
+skills = Array[ExtResource("2_up8ex")]([ExtResource("2_fuego"), ExtResource("3_rayo")])
+metadata/_custom_type_script = "uid://tbrn0mdsnx0t"

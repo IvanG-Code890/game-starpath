@@ -7,5 +7,3 @@ script = ExtResource("1_skill")
 skill_name = "Golpe Brutal"
 damage = 50
 mp_cost = 10
-targets_enemy = true
-is_magical = false
