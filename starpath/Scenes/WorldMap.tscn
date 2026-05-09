@@ -30,12 +30,14 @@ position = Vector2(100, 301)
 position = Vector2(-970, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Limites/ParedIzquierda" unique_id=1328412007]
+position = Vector2(26, 0)
 shape = SubResource("RectangleShape2D_left")
 
 [node name="ParedArriba" type="StaticBody2D" parent="Limites" unique_id=1976894892]
 position = Vector2(0, -970)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Limites/ParedArriba" unique_id=856155152]
+position = Vector2(7, 86)
 shape = SubResource("RectangleShape2D_top")
 
 [node name="ParedAbajo" type="StaticBody2D" parent="Limites" unique_id=1966929390]
@@ -51,7 +53,7 @@ position = Vector2(514, 120)
 
 [node name="PauseMenu" parent="." unique_id=534843101 instance=ExtResource("4_pm")]
 
-[node name="map1" parent="." unique_id=1947756238 instance=ExtResource("5_ovel5")]
+[node name="map1" parent="." unique_id=1782861883 instance=ExtResource("5_ovel5")]
 z_as_relative = false
 position = Vector2(-956, -895)
 
@@ -59,3 +61,5 @@ position = Vector2(-956, -895)
 position = Vector2(75, -51)
 is_merchant = true
 npc_texture = ExtResource("7_e6b1v")
+
+[editable path="map1"]
