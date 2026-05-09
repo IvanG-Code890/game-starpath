@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="60" height="60" tilewidth="32" tileheight="32" infinite="0" nextlayerid="14" nextobjectid="1">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="60" height="60" tilewidth="32" tileheight="32" infinite="0" nextlayerid="15" nextobjectid="41">
  <tileset firstgid="1" source="[A]WaterFall_pipo.tsx"/>
  <tileset firstgid="577" name="[Base]BaseChip_pipo" tilewidth="32" tileheight="32" tilecount="1064" columns="8">
   <image source="[Base]BaseChip_pipo.png" width="256" height="4256"/>
@@ -71,6 +71,22 @@
 584,584,584,584,584,584,584,584,584,584,584,584,584,584,584,584,584,584,584,584,584,1821,1792,577,577,577,577,577,577,577,577,577,577,577,577,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867,867
 </data>
  </layer>
+ <objectgroup id="14" name="collision">
+  <object id="2" x="83.5" y="698.5"/>
+  <object id="4" x="90.3333" y="682"/>
+  <object id="6" x="125" y="673"/>
+  <object id="22" x="73.3333" y="670"/>
+  <object id="23" x="75" y="666"/>
+  <object id="24" x="77" y="667.667" width="0.333333"/>
+  <object id="25" x="93.6667" y="674" width="0.333333" height="0.333333"/>
+  <object id="26" x="116.667" y="659" width="9" height="13.3333"/>
+  <object id="28" x="115.667" y="633.667"/>
+  <object id="34" x="75.3333" y="649.333"/>
+  <object id="37" x="58" y="620.667"/>
+  <object id="38" x="0" y="575.333" width="64" height="129"/>
+  <object id="39" x="64.3333" y="608.333" width="95.3333" height="95"/>
+  <object id="40" x="160" y="638.667" width="31.6667" height="65.3333"/>
+ </objectgroup>
  <layer id="8" name="grass" width="60" height="60">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5302,5303,5304,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
