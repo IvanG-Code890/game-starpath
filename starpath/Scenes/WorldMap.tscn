@@ -51,7 +51,7 @@ position = Vector2(514, 120)
 
 [node name="PauseMenu" parent="." unique_id=534843101 instance=ExtResource("4_pm")]
 
-[node name="map1" parent="." unique_id=609889616 instance=ExtResource("5_ovel5")]
+[node name="map1" parent="." unique_id=1947756238 instance=ExtResource("5_ovel5")]
 z_as_relative = false
 position = Vector2(-956, -895)
 
