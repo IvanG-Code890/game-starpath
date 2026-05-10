@@ -547,7 +547,7 @@ func _refresh_sell() -> void:
 		return
 
 	for item: ItemData in available:
-		var sell_price: int = maxi(1, item.price / 2)
+		var sell_price: int = maxi(1, item.price / 2 as int)
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
 		list.add_child(row)

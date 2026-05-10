@@ -8,6 +8,18 @@ func _ready() -> void:
 	_setup_map_layers()
 	_extract_decorative_tiles()
 	_elevate_tall_objects()
+	call_deferred("_setup_rio_layer")
+
+func _setup_rio_layer() -> void:
+	var map := get_node_or_null("map1")
+	if map == null:
+		return
+	var rio := map.find_child("rio", true, false)
+	if rio == null:
+		return
+	for child in rio.get_children():
+		if child is StaticBody2D:
+			child.collision_layer = 2
 
 func _setup_map_layers() -> void:
 	var map := get_node_or_null("map1")
@@ -20,6 +32,13 @@ func _setup_map_layers() -> void:
 			child.z_index = -10
 		elif child.name in object_layers:
 			child.z_index = 10
+		# Mueve los tiles de agua a la capa de colisión 2
+		# para que BridgeArea pueda ignorarlos cambiando la máscara del jugador
+		if child.name == "water" and child is TileMapLayer:
+			var ts := child.tile_set.duplicate() as TileSet
+			for i in ts.get_physics_layers_count():
+				ts.set_physics_layer_collision_layer(i, 2)
+			child.tile_set = ts
 
 # Mueve arbustos (40-42), hierbas (48-49) y flores (51-55) de la capa "tree"
 # a una nueva capa con z=-5 para que el jugador quede encima.
