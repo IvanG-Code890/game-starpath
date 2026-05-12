@@ -20,7 +20,6 @@ const C_ACCENT    := Color(0.40, 0.80, 1.00, 1.00)   # acento
 var _main_panel:  Control
 var _items_panel: Control
 var _equip_panel: Control
-var _sell_panel:  Control
 var _open_frame:  int = -1   # frame en que se abrió; evita cierre inmediato
 
 func _ready() -> void:
@@ -57,7 +56,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if Engine.get_process_frames() == _open_frame:
 				get_viewport().set_input_as_handled()
 				return
-			if _items_panel.visible or _equip_panel.visible or _sell_panel.visible:
+			if _items_panel.visible or _equip_panel.visible:
 				_show_main()
 			else:
 				close()
@@ -76,11 +75,9 @@ func _build_ui() -> void:
 	_main_panel  = _build_main_panel()
 	_items_panel = _build_items_panel()
 	_equip_panel = _build_equip_panel()
-	_sell_panel  = _build_sell_panel()
 	add_child(_main_panel)
 	add_child(_items_panel)
 	add_child(_equip_panel)
-	add_child(_sell_panel)
 
 # ── Panel principal ────────────────────────────────────────────────────────────
 
@@ -147,10 +144,6 @@ func _build_main_panel() -> Control:
 	btn_items.pressed.connect(_show_items)
 	right.add_child(btn_items)
 
-	var btn_sell := _make_button("✦  Vender", 170, 38)
-	btn_sell.pressed.connect(_show_sell)
-	right.add_child(btn_sell)
-
 	var btn_close := _make_button("✕  Cerrar  [Esc]", 170, 38)
 	btn_close.pressed.connect(close)
 	right.add_child(btn_close)
@@ -196,7 +189,6 @@ func _show_main() -> void:
 	_main_panel.visible  = true
 	_items_panel.visible = false
 	_equip_panel.visible = false
-	_sell_panel.visible  = false
 
 func _show_items() -> void:
 	_main_panel.visible  = false
@@ -208,15 +200,7 @@ func _show_equip() -> void:
 	_main_panel.visible  = false
 	_items_panel.visible = false
 	_equip_panel.visible = true
-	_sell_panel.visible  = false
 	_refresh_equip()
-
-func _show_sell() -> void:
-	_main_panel.visible  = false
-	_items_panel.visible = false
-	_equip_panel.visible = false
-	_sell_panel.visible  = true
-	_refresh_sell()
 
 # ── Refresco de datos ─────────────────────────────────────────────────────────
 
@@ -483,100 +467,6 @@ func _refresh_equip() -> void:
 
 	if not has_any:
 		_lbl_colored(list, "Sin equipo disponible.", 13, C_MUTED)
-
-# ── Panel de venta ─────────────────────────────────────────────────────────────
-
-func _build_sell_panel() -> Control:
-	var root := _make_centered_root(420, 340)
-	root.visible = false
-
-	var panel := root.get_child(0) as PanelContainer
-	_style_panel(panel, C_PANEL, C_BORDER)
-
-	var margin := panel.get_child(0) as MarginContainer
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
-	margin.add_child(vbox)
-
-	_lbl_colored(vbox, "✦  VENDER", 16, C_TITLE)
-	vbox.add_child(_separator_h(C_BORDER, 1))
-	vbox.add_child(_spacer(4))
-
-	var list := VBoxContainer.new()
-	list.name = "SellList"
-	list.add_theme_constant_override("separation", 6)
-	vbox.add_child(list)
-
-	vbox.add_child(_spacer(4))
-	vbox.add_child(_separator_h(C_BORDER, 1))
-
-	var gold_row := HBoxContainer.new()
-	vbox.add_child(gold_row)
-	var gold_icon := Label.new()
-	gold_icon.text = "Oro actual:"
-	gold_icon.add_theme_font_size_override("font_size", 13)
-	gold_icon.add_theme_color_override("font_color", C_MUTED)
-	gold_icon.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	gold_row.add_child(gold_icon)
-	var sell_gold_lbl := Label.new()
-	sell_gold_lbl.name = "SellGoldLbl"
-	sell_gold_lbl.add_theme_font_size_override("font_size", 13)
-	sell_gold_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.30))
-	gold_row.add_child(sell_gold_lbl)
-
-	vbox.add_child(_separator_h(C_BORDER, 1))
-
-	var btn_back := _make_button("◀  Volver", 150, 34)
-	btn_back.pressed.connect(_show_main)
-	vbox.add_child(btn_back)
-
-	return root
-
-func _refresh_sell() -> void:
-	var list := _sell_panel.find_child("SellList", true, false) as VBoxContainer
-	for child in list.get_children():
-		child.queue_free()
-
-	var gold_lbl := _sell_panel.find_child("SellGoldLbl", true, false) as Label
-	if gold_lbl:
-		gold_lbl.text = "%d ✦" % Inventory.gold
-
-	var available := Inventory.get_available()
-	if available.is_empty():
-		_lbl_colored(list, "No tienes objetos para vender.", 13, C_MUTED)
-		return
-
-	for item: ItemData in available:
-		var sell_price: int = maxi(1, item.price / 2 as int)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		list.add_child(row)
-
-		var name_lbl := Label.new()
-		var qty_text := " ×%d" % item.quantity if item.item_type == ItemData.ItemType.CONSUMABLE else ""
-		name_lbl.text = item.item_name + qty_text
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.add_theme_font_size_override("font_size", 13)
-		name_lbl.add_theme_color_override("font_color", C_TEXT)
-		row.add_child(name_lbl)
-
-		var price_lbl := Label.new()
-		price_lbl.text = "%d ✦" % sell_price
-		price_lbl.custom_minimum_size = Vector2(48, 0)
-		price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		price_lbl.add_theme_font_size_override("font_size", 13)
-		price_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.30))
-		row.add_child(price_lbl)
-
-		var captured := item
-		var btn := _make_button("Vender", 80, 28)
-		btn.pressed.connect(func():
-			Inventory.gold += sell_price
-			Inventory.remove_item(captured)
-			_refresh_sell()
-			_refresh_stats()
-		)
-		row.add_child(btn)
 
 func _add_slot_row(parent: Node, label: String, item: ItemData, on_unequip: Callable) -> void:
 	var row := HBoxContainer.new()

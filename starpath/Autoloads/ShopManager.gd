@@ -11,7 +11,7 @@ var _filtered: Array[ItemData] = []
 var _selected: int             = 0
 var _current_category: String  = "todo"
 
-# ── Nodos UI ──────────────────────────────────────────────────────────────────
+# ── Nodos UI (compra) ─────────────────────────────────────────────────────────
 var _overlay:     ColorRect
 var _panel:       PanelContainer
 var _title_label: Label
@@ -20,6 +20,14 @@ var _cat_buttons: Array[Button] = []
 var _items_vbox:  VBoxContainer
 var _msg_label:   Label
 var _item_rows:   Array[HBoxContainer] = []
+
+# ── Nodos UI (venta) ──────────────────────────────────────────────────────────
+var _sell_panel:    PanelContainer
+var _sell_vbox:     VBoxContainer
+var _sell_gold_lbl: Label
+var _sell_msg_lbl:  Label
+var _sell_items:    Array[ItemData] = []
+var _sell_selected: int             = 0
 
 const COLOR_SELECTED    := Color(1.00, 0.95, 0.35)
 const COLOR_NORMAL      := Color(0.90, 0.90, 0.90)
@@ -36,8 +44,10 @@ const CATEGORIES := [
 func _ready() -> void:
 	layer = 127
 	_build_ui()
+	_build_sell_ui()
 	_overlay.hide()
 	_panel.hide()
+	_sell_panel.hide()
 
 func _build_ui() -> void:
 	# Fondo oscuro semitransparente
@@ -259,6 +269,28 @@ func _refresh_selection() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_open:
 		return
+	# Modo venta
+	if _sell_panel.visible:
+		if event.is_action_pressed("ui_up"):
+			get_viewport().set_input_as_handled()
+			if not _sell_items.is_empty():
+				_sell_selected = (_sell_selected - 1 + _sell_items.size()) % _sell_items.size()
+				_sell_msg_lbl.text = ""
+				_refresh_sell_selection()
+		elif event.is_action_pressed("ui_down"):
+			get_viewport().set_input_as_handled()
+			if not _sell_items.is_empty():
+				_sell_selected = (_sell_selected + 1) % _sell_items.size()
+				_sell_msg_lbl.text = ""
+				_refresh_sell_selection()
+		elif event.is_action_pressed("ui_accept"):
+			get_viewport().set_input_as_handled()
+			_try_sell()
+		elif event.is_action_pressed("ui_cancel"):
+			get_viewport().set_input_as_handled()
+			_close_sell()
+		return
+	# Modo compra
 	if event.is_action_pressed("ui_up"):
 		get_viewport().set_input_as_handled()
 		if _filtered.is_empty():
@@ -301,4 +333,158 @@ func _close() -> void:
 	_panel.hide()
 	_catalog  = []
 	_filtered = []
+	shop_closed.emit()
+
+# ── Panel de venta ────────────────────────────────────────────────────────────
+
+func _build_sell_ui() -> void:
+	_sell_panel = PanelContainer.new()
+	_sell_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_sell_panel.offset_left   = -210
+	_sell_panel.offset_right  =  210
+	_sell_panel.offset_top    = -190
+	_sell_panel.offset_bottom =  190
+
+	var style := StyleBoxFlat.new()
+	style.bg_color     = Color(0.10, 0.07, 0.24, 0.98)
+	style.border_color = Color(0.85, 0.70, 0.15)
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(6)
+	style.content_margin_left   = 22
+	style.content_margin_right  = 22
+	style.content_margin_top    = 16
+	style.content_margin_bottom = 14
+	_sell_panel.add_theme_stylebox_override("panel", style)
+	add_child(_sell_panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	_sell_panel.add_child(vbox)
+
+	var header := HBoxContainer.new()
+	vbox.add_child(header)
+
+	var title_lbl := Label.new()
+	title_lbl.name = "SellTitle"
+	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_lbl.add_theme_font_size_override("font_size", 17)
+	title_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.30))
+	title_lbl.text = "✦  Vender"
+	header.add_child(title_lbl)
+
+	_sell_gold_lbl = Label.new()
+	_sell_gold_lbl.add_theme_font_size_override("font_size", 14)
+	_sell_gold_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.30))
+	header.add_child(_sell_gold_lbl)
+
+	vbox.add_child(HSeparator.new())
+
+	_sell_vbox = VBoxContainer.new()
+	_sell_vbox.add_theme_constant_override("separation", 6)
+	vbox.add_child(_sell_vbox)
+
+	vbox.add_child(HSeparator.new())
+
+	_sell_msg_lbl = Label.new()
+	_sell_msg_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sell_msg_lbl.add_theme_font_size_override("font_size", 13)
+	vbox.add_child(_sell_msg_lbl)
+
+	var hint := Label.new()
+	hint.text = "↑↓ Seleccionar   Enter Vender   Esc Salir"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 11)
+	hint.add_theme_color_override("font_color", Color(0.55, 0.55, 0.75))
+	vbox.add_child(hint)
+
+func open_sell(title: String = "Vender") -> void:
+	if is_open:
+		return
+	is_open         = true
+	_sell_selected  = 0
+	_sell_msg_lbl.text = ""
+	var title_lbl := _sell_panel.find_child("SellTitle", true, false) as Label
+	if title_lbl:
+		title_lbl.text = "✦  " + title
+	_populate_sell_items()
+	_sell_gold_lbl.text = "Oro: %d ✦" % Inventory.gold
+	_overlay.show()
+	_sell_panel.show()
+
+func _populate_sell_items() -> void:
+	for child in _sell_vbox.get_children():
+		child.queue_free()
+
+	_sell_items = Inventory.get_available()
+
+	if _sell_items.is_empty():
+		var lbl := Label.new()
+		lbl.text = "— No tienes objetos —"
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.add_theme_color_override("font_color", Color(0.55, 0.55, 0.75))
+		_sell_vbox.add_child(lbl)
+		return
+
+	for item: ItemData in _sell_items:
+		var sell_price: int = maxi(1, item.price / 2)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		_sell_vbox.add_child(row)
+
+		var arrow := Label.new()
+		arrow.text = "▶"
+		arrow.add_theme_font_size_override("font_size", 14)
+		arrow.custom_minimum_size = Vector2(18, 0)
+		row.add_child(arrow)
+
+		var name_lbl := Label.new()
+		var qty := " ×%d" % item.quantity if item.item_type == ItemData.ItemType.CONSUMABLE else ""
+		name_lbl.text = item.item_name + qty
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.add_theme_font_size_override("font_size", 14)
+		name_lbl.add_theme_color_override("font_color", COLOR_NORMAL)
+		row.add_child(name_lbl)
+
+		var price_lbl := Label.new()
+		price_lbl.text = "%d ✦" % sell_price
+		price_lbl.add_theme_font_size_override("font_size", 13)
+		price_lbl.custom_minimum_size  = Vector2(56, 0)
+		price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		price_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.30))
+		row.add_child(price_lbl)
+
+	_refresh_sell_selection()
+
+func _refresh_sell_selection() -> void:
+	var rows := _sell_vbox.get_children()
+	for i in rows.size():
+		var row = rows[i]
+		if not row is HBoxContainer:
+			continue
+		var is_sel: bool = (i == _sell_selected)
+		row.get_child(0).visible = is_sel  # flecha
+		for child in row.get_children():
+			if child is Label:
+				child.add_theme_color_override("font_color",
+					COLOR_SELECTED if is_sel else COLOR_NORMAL)
+
+func _try_sell() -> void:
+	if _sell_items.is_empty() or _sell_selected >= _sell_items.size():
+		return
+	var item := _sell_items[_sell_selected]
+	var sell_price: int = maxi(1, item.price / 2)
+	Inventory.gold += sell_price
+	Inventory.remove_item(item)
+	_sell_msg_lbl.text = item.item_name + " vendido: +%d ✦" % sell_price
+	_sell_msg_lbl.add_theme_color_override("font_color", Color(0.35, 1.0, 0.5))
+	_sell_gold_lbl.text = "Oro: %d ✦" % Inventory.gold
+	_populate_sell_items()
+	if not _sell_items.is_empty():
+		_sell_selected = mini(_sell_selected, _sell_items.size() - 1)
+
+func _close_sell() -> void:
+	is_open = false
+	_overlay.hide()
+	_sell_panel.hide()
+	_sell_items = []
 	shop_closed.emit()
