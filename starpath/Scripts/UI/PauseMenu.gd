@@ -17,10 +17,12 @@ const C_BTN_NORM  := Color(0.14, 0.20, 0.38, 1.00)   # botón normal
 const C_BTN_HOV   := Color(0.20, 0.35, 0.60, 1.00)   # botón hover
 const C_ACCENT    := Color(0.40, 0.80, 1.00, 1.00)   # acento
 
-var _main_panel:   Control
-var _items_panel:  Control
-var _equip_panel:  Control
-var _slot_panel:   Control
+var _main_panel:    Control
+var _items_panel:   Control
+var _equip_panel:   Control
+var _slot_panel:    Control
+var _options_panel: Control
+var _confirm_panel: Control
 var _open_frame:   int    = -1
 var _slot_mode:    String = "save"
 var _feedback_lbl:      Label
@@ -60,7 +62,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			if Engine.get_process_frames() == _open_frame:
 				get_viewport().set_input_as_handled()
 				return
-			if _items_panel.visible or _equip_panel.visible or _slot_panel.visible:
+			if _confirm_panel.visible:
+				_confirm_panel.visible = false
+			elif _items_panel.visible or _equip_panel.visible or _slot_panel.visible or _options_panel.visible:
 				_show_main()
 			else:
 				close()
@@ -79,16 +83,20 @@ func _build_ui() -> void:
 	_main_panel  = _build_main_panel()
 	_items_panel = _build_items_panel()
 	_equip_panel = _build_equip_panel()
-	_slot_panel  = _build_slot_panel()
+	_slot_panel    = _build_slot_panel()
+	_options_panel = _build_options_panel()
+	_confirm_panel = _build_confirm_panel()
 	add_child(_main_panel)
 	add_child(_items_panel)
 	add_child(_equip_panel)
 	add_child(_slot_panel)
+	add_child(_options_panel)
+	add_child(_confirm_panel)
 
 # ── Panel principal ────────────────────────────────────────────────────────────
 
 func _build_main_panel() -> Control:
-	var root := _make_centered_root(520, 470)
+	var root := _make_centered_root(520, 520)
 
 	var panel := root.get_child(0) as PanelContainer
 	_style_panel(panel, C_PANEL, C_BORDER)
@@ -150,6 +158,10 @@ func _build_main_panel() -> Control:
 	btn_items.pressed.connect(_show_items)
 	right.add_child(btn_items)
 
+	var btn_opts := _make_button("⚙  Opciones", 170, 38)
+	btn_opts.pressed.connect(_show_options)
+	right.add_child(btn_opts)
+
 	right.add_child(_separator_h(C_BORDER, 1))
 	right.add_child(_spacer(2))
 
@@ -164,6 +176,11 @@ func _build_main_panel() -> Control:
 	right.add_child(_spacer(2))
 	right.add_child(_separator_h(C_BORDER, 1))
 	right.add_child(_spacer(4))
+
+	var btn_quit := _make_button("⏻  Salir del juego", 170, 38)
+	btn_quit.pressed.connect(_on_quit_pressed)
+	btn_quit.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45))
+	right.add_child(btn_quit)
 
 	var btn_close := _make_button("✕  Cerrar  [Esc]", 170, 38)
 	btn_close.pressed.connect(close)
@@ -214,10 +231,11 @@ func _build_items_panel() -> Control:
 # ── Navegación ────────────────────────────────────────────────────────────────
 
 func _show_main() -> void:
-	_main_panel.visible  = true
-	_items_panel.visible = false
-	_equip_panel.visible = false
-	_slot_panel.visible  = false
+	_main_panel.visible    = true
+	_items_panel.visible   = false
+	_equip_panel.visible   = false
+	_slot_panel.visible    = false
+	_options_panel.visible = false
 
 func _show_items() -> void:
 	_main_panel.visible  = false
@@ -235,11 +253,20 @@ func _show_equip() -> void:
 
 func _show_slots(mode: String) -> void:
 	_slot_mode = mode
-	_main_panel.visible  = false
-	_items_panel.visible = false
-	_equip_panel.visible = false
-	_slot_panel.visible  = true
+	_main_panel.visible    = false
+	_items_panel.visible   = false
+	_equip_panel.visible   = false
+	_slot_panel.visible    = true
+	_options_panel.visible = false
 	_refresh_slot_list()
+
+func _show_options() -> void:
+	_main_panel.visible    = false
+	_items_panel.visible   = false
+	_equip_panel.visible   = false
+	_slot_panel.visible    = false
+	_options_panel.visible = true
+	_refresh_options()
 
 # ── Refresco de datos ─────────────────────────────────────────────────────────
 
@@ -632,6 +659,235 @@ func _refresh_slot_list() -> void:
 			if not info["empty"]:
 				btn.pressed.connect(func(): _do_load(captured_i))
 			row.add_child(btn)
+
+# ── Panel de opciones ─────────────────────────────────────────────────────────
+
+func _build_options_panel() -> Control:
+	var root := _make_centered_root(460, 390)
+	root.visible = false
+
+	var panel := root.get_child(0) as PanelContainer
+	_style_panel(panel, C_PANEL, C_BORDER)
+
+	var margin := panel.get_child(0) as MarginContainer
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	margin.add_child(vbox)
+
+	_lbl_colored(vbox, "⚙  OPCIONES", 16, C_TITLE)
+	vbox.add_child(_separator_h(C_BORDER, 1))
+	vbox.add_child(_spacer(4))
+
+	vbox.add_child(_make_volume_row("Música",  "MusicSlider",  "MusicVal"))
+	vbox.add_child(_make_volume_row("SFX",     "SFXSlider",    "SFXVal"))
+
+	vbox.add_child(_spacer(6))
+	vbox.add_child(_separator_h(C_BORDER, 1))
+	vbox.add_child(_spacer(4))
+	_lbl_colored(vbox, "VÍDEO", 12, C_MUTED)
+	vbox.add_child(_spacer(2))
+
+	# Fila: Pantalla completa
+	var fs_row := HBoxContainer.new()
+	fs_row.add_theme_constant_override("separation", 10)
+	vbox.add_child(fs_row)
+
+	var fs_lbl := Label.new()
+	fs_lbl.text = "Modo"
+	fs_lbl.custom_minimum_size = Vector2(60, 0)
+	fs_lbl.add_theme_font_size_override("font_size", 13)
+	fs_lbl.add_theme_color_override("font_color", C_TEXT)
+	fs_row.add_child(fs_lbl)
+
+	var fs_btn := Button.new()
+	fs_btn.name                  = "FullscreenBtn"
+	fs_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	fs_btn.add_theme_font_size_override("font_size", 13)
+	fs_btn.pressed.connect(_on_fullscreen_toggle)
+	fs_row.add_child(fs_btn)
+
+	# Fila: Resolución
+	var res_row := HBoxContainer.new()
+	res_row.add_theme_constant_override("separation", 10)
+	vbox.add_child(res_row)
+
+	var res_lbl := Label.new()
+	res_lbl.text = "Resolución"
+	res_lbl.custom_minimum_size = Vector2(60, 0)
+	res_lbl.add_theme_font_size_override("font_size", 13)
+	res_lbl.add_theme_color_override("font_color", C_TEXT)
+	res_row.add_child(res_lbl)
+
+	var res_opt := OptionButton.new()
+	res_opt.name                  = "ResolutionOpt"
+	res_opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	res_opt.add_theme_font_size_override("font_size", 13)
+	for label in SettingsManager.RESOLUTION_LABELS:
+		res_opt.add_item(label)
+	res_opt.item_selected.connect(_on_resolution_selected)
+	res_row.add_child(res_opt)
+
+	vbox.add_child(_spacer(4))
+	vbox.add_child(_separator_h(C_BORDER, 1))
+
+	var btn_back := _make_button("◀  Volver", 150, 34)
+	btn_back.pressed.connect(_show_main)
+	vbox.add_child(btn_back)
+
+	return root
+
+func _make_volume_row(label: String, slider_name: String, val_name: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+
+	var lbl := Label.new()
+	lbl.text = label
+	lbl.custom_minimum_size = Vector2(60, 0)
+	lbl.add_theme_font_size_override("font_size", 13)
+	lbl.add_theme_color_override("font_color", C_TEXT)
+	row.add_child(lbl)
+
+	var slider := HSlider.new()
+	slider.name                 = slider_name
+	slider.min_value            = 0
+	slider.max_value            = 100
+	slider.step                 = 1
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(slider)
+
+	var val_lbl := Label.new()
+	val_lbl.name = val_name
+	val_lbl.custom_minimum_size = Vector2(44, 0)
+	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val_lbl.add_theme_font_size_override("font_size", 13)
+	val_lbl.add_theme_color_override("font_color", C_ACCENT)
+	row.add_child(val_lbl)
+
+	return row
+
+func _refresh_options() -> void:
+	# ── Audio ──
+	var music_slider := _options_panel.find_child("MusicSlider", true, false) as HSlider
+	var sfx_slider   := _options_panel.find_child("SFXSlider",   true, false) as HSlider
+	var music_val    := _options_panel.find_child("MusicVal",     true, false) as Label
+	var sfx_val      := _options_panel.find_child("SFXVal",       true, false) as Label
+
+	if music_slider and not music_slider.value_changed.is_connected(_on_music_volume):
+		music_slider.value = AudioManager.bgm_volume * 100
+		music_slider.value_changed.connect(_on_music_volume)
+	if sfx_slider and not sfx_slider.value_changed.is_connected(_on_sfx_volume):
+		sfx_slider.value = AudioManager.sfx_volume * 100
+		sfx_slider.value_changed.connect(_on_sfx_volume)
+	if music_val:
+		music_val.text = "%d%%" % int(AudioManager.bgm_volume * 100)
+	if sfx_val:
+		sfx_val.text = "%d%%" % int(AudioManager.sfx_volume * 100)
+
+	# ── Vídeo ──
+	var fs_btn  := _options_panel.find_child("FullscreenBtn",  true, false) as Button
+	var res_opt := _options_panel.find_child("ResolutionOpt",  true, false) as OptionButton
+	var fs      := SettingsManager.is_fullscreen()
+
+	if fs_btn:
+		fs_btn.text = "Pantalla completa  ✓" if fs else "Modo ventana"
+	if res_opt:
+		res_opt.selected = SettingsManager.get_resolution_idx()
+		res_opt.disabled = fs
+
+func _on_music_volume(value: float) -> void:
+	AudioManager.set_bgm_volume(value / 100.0)
+	var lbl := _options_panel.find_child("MusicVal", true, false) as Label
+	if lbl:
+		lbl.text = "%d%%" % int(value)
+
+func _on_sfx_volume(value: float) -> void:
+	AudioManager.set_sfx_volume(value / 100.0)
+	var lbl := _options_panel.find_child("SFXVal", true, false) as Label
+	if lbl:
+		lbl.text = "%d%%" % int(value)
+
+func _on_fullscreen_toggle() -> void:
+	SettingsManager.set_fullscreen(not SettingsManager.is_fullscreen())
+	_refresh_options()
+
+func _on_resolution_selected(idx: int) -> void:
+	SettingsManager.set_resolution(idx)
+
+# ── Salir del juego ───────────────────────────────────────────────────────────
+
+func _on_quit_pressed() -> void:
+	_confirm_panel.visible = true
+	var warn := _confirm_panel.find_child("WarnLbl", true, false) as Label
+	var btn_save_quit := _confirm_panel.find_child("BtnSaveQuit", true, false) as Button
+	var has_unsaved   := SaveManager.has_unsaved_changes
+	if warn:
+		warn.visible = has_unsaved
+	if btn_save_quit:
+		btn_save_quit.visible = has_unsaved
+
+func _build_confirm_panel() -> Control:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.visible = false
+
+	# Fondo oscuro semitransparente
+	var overlay := ColorRect.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.6)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(overlay)
+
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(380, 0)
+	panel.offset_left  = -190
+	panel.offset_right =  190
+	panel.offset_top   = -110
+	panel.offset_bottom =  110
+	_style_panel(panel, C_PANEL, Color(1.0, 0.45, 0.45))
+	root.add_child(panel)
+
+	var margin := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(side, 20)
+	panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	margin.add_child(vbox)
+
+	_lbl_colored(vbox, "¿Salir del juego?", 16, C_TITLE)
+	vbox.add_child(_separator_h(Color(1.0, 0.45, 0.45), 1))
+
+	var warn := Label.new()
+	warn.name = "WarnLbl"
+	warn.text = "⚠  Tienes cambios sin guardar."
+	warn.add_theme_font_size_override("font_size", 13)
+	warn.add_theme_color_override("font_color", Color(1.0, 0.80, 0.30))
+	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(warn)
+
+	var btn_save_quit := _make_button("💾  Guardar y salir", 320, 38)
+	btn_save_quit.name = "BtnSaveQuit"
+	btn_save_quit.pressed.connect(_on_save_and_quit)
+	vbox.add_child(btn_save_quit)
+
+	var btn_quit := _make_button("✕  Salir sin guardar", 320, 38)
+	btn_quit.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45))
+	btn_quit.pressed.connect(func(): get_tree().quit())
+	vbox.add_child(btn_quit)
+
+	var btn_cancel := _make_button("←  Cancelar", 320, 38)
+	btn_cancel.pressed.connect(func(): root.visible = false)
+	vbox.add_child(btn_cancel)
+
+	return root
+
+func _on_save_and_quit() -> void:
+	# Guarda en la ranura 0 automáticamente y luego sale
+	SaveManager.save_game(0)
+	get_tree().quit()
 
 func _add_slot_row(parent: Node, label: String, item: ItemData, on_unequip: Callable) -> void:
 	var row := HBoxContainer.new()

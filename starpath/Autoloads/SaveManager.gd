@@ -5,6 +5,11 @@ signal game_loaded(slot: int)
 
 const SLOT_COUNT := 20
 
+var has_unsaved_changes: bool = true
+
+func _ready() -> void:
+	Inventory.changed.connect(func(): has_unsaved_changes = true)
+
 func _slot_path(slot: int) -> String:
 	return "user://slot_%02d.save" % slot
 
@@ -52,6 +57,7 @@ func save_game(slot: int) -> void:
 	file.store_string(JSON.stringify(data))
 	file.close()
 
+	has_unsaved_changes = false
 	game_saved.emit(slot)
 
 func load_game(slot: int) -> bool:

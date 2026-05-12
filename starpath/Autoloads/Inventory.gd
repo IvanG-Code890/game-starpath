@@ -1,5 +1,7 @@
 extends Node
 
+signal changed
+
 var items:            Array[ItemData] = []
 var gold:             int             = 150
 var equipped_weapon:  ItemData        = null
@@ -24,6 +26,7 @@ func _ready() -> void:
 
 func use_item(item: ItemData) -> void:
 	item.quantity -= 1
+	changed.emit()
 
 func get_available() -> Array[ItemData]:
 	var result: Array[ItemData] = []
@@ -38,22 +41,26 @@ func add_item(source: ItemData) -> void:
 		for item in items:
 			if item.item_name == source.item_name:
 				item.quantity += 1
+				changed.emit()
 				return
 	var copy          := source.duplicate() as ItemData
 	copy.quantity      = 1
 	items.append(copy)
+	changed.emit()
 
 func equip(item: ItemData) -> void:
 	if item.item_type == ItemData.ItemType.WEAPON:
 		equipped_weapon = item
 	elif item.item_type == ItemData.ItemType.ARMOR:
 		equipped_armor = item
+	changed.emit()
 
 func unequip(item: ItemData) -> void:
 	if item == equipped_weapon:
 		equipped_weapon = null
 	elif item == equipped_armor:
 		equipped_armor = null
+	changed.emit()
 
 ## Quita una unidad del item; si es arma/armadura lo elimina del array (y desequipa).
 func remove_item(item: ItemData) -> void:
@@ -64,6 +71,7 @@ func remove_item(item: ItemData) -> void:
 	else:
 		unequip(item)
 		items.erase(item)
+	changed.emit()
 
 func get_attack_bonus() -> int:
 	return equipped_weapon.attack_bonus if equipped_weapon else 0

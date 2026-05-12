@@ -21,6 +21,15 @@ Inventory="*res://Autoloads/Inventory.gd"
 DialogManager="*res://Autoloads/DialogManager.gd"
 ShopManager="*res://Autoloads/ShopManager.gd"
 SaveManager="*res://Autoloads/SaveManager.gd"
+AudioManager="*res://Autoloads/AudioManager.gd"
+SettingsManager="*res://Autoloads/SettingsManager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/resizable=false
+window/stretch/mode="canvas_items"
 
 [editor_plugins]
 

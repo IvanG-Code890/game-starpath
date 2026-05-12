@@ -39,6 +39,7 @@ const MAGIC_CLASSES := [
 
 func _ready() -> void:
 	print("--- CARGANDO ESCENA DE BATALLA ---")
+	AudioManager.play_bgm("battle")
 
 	menu_combate.visible  = false
 	end_panel.visible     = false
@@ -216,9 +217,11 @@ func _on_battle_ended(player_won: bool) -> void:
 	if player_won:
 		result_label.text = "¡VICTORIA!"
 		replay_btn.text   = "Volver al mapa"
+		AudioManager.play_bgm("victory", false)
 	else:
 		result_label.text = "DERROTA..."
 		replay_btn.text   = "Reintentar"
+		AudioManager.stop_bgm()
 
 func _on_btn_reiniciar_pressed() -> void:
 	if _player_won:

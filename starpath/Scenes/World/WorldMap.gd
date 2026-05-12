@@ -4,11 +4,13 @@ extends Node2D
 @onready var pause_menu: PauseMenu        = $PauseMenu
 
 func _ready() -> void:
+	AudioManager.play_bgm("exploration")
 	player.menu_requested.connect(pause_menu.toggle)
 	_setup_map_layers()
 	_extract_decorative_tiles()
 	_elevate_tall_objects()
 	call_deferred("_setup_rio_layer")
+	call_deferred("_setup_camera_limits")
 
 func _setup_rio_layer() -> void:
 	var map := get_node_or_null("map1")
@@ -153,6 +155,32 @@ func _elevate_tall_objects() -> void:
 # Actualiza el z_index de tree_lower cada frame:
 # - Si el jugador pisa un tile del collar → z=1 (collar encima del jugador)
 # - Si no                                → z=-1 (jugador encima del collar)
+func _setup_camera_limits() -> void:
+	var map := get_node_or_null("map1")
+	if map == null:
+		return
+	# Usa la capa "ground" como referencia del área total del mapa
+	var ref_layer: TileMapLayer = null
+	for child in map.get_children():
+		if child is TileMapLayer and child.name == "ground":
+			ref_layer = child
+			break
+	if ref_layer == null:
+		return
+
+	var rect      := ref_layer.get_used_rect()           # en coordenadas de tile
+	var tile_size := ref_layer.tile_set.tile_size         # px por tile (ej. Vector2i(32,32))
+	var origin: Vector2 = (map as Node2D).global_position
+
+	var cam := player.get_node_or_null("Camera2D") as Camera2D
+	if cam == null:
+		return
+
+	cam.limit_left   = int(origin.x + rect.position.x * tile_size.x)
+	cam.limit_top    = int(origin.y + rect.position.y * tile_size.y)
+	cam.limit_right  = int(origin.x + (rect.position.x + rect.size.x) * tile_size.x)
+	cam.limit_bottom = int(origin.y + (rect.position.y + rect.size.y) * tile_size.y)
+
 func _process(_delta: float) -> void:
 	var lower := get_node_or_null("tree_lower") as TileMapLayer
 	if lower == null:
