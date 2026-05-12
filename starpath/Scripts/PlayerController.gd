@@ -96,4 +96,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_X:
 			menu_requested.emit()
 		if event.keycode == KEY_F1:
-			print("PLAYER POS: ", global_position)
+			print("─── DEBUG F1 ───")
+			print("  player.global_position = ", global_position)
+			var world_map := get_parent()
+			var lower : TileMapLayer = world_map.get_node_or_null("tree_lower")
+			if lower != null:
+				var cell := lower.local_to_map(lower.to_local(global_position))
+				var src_id := lower.get_cell_source_id(cell)
+				print("  tree_lower cell       = ", cell)
+				if src_id != -1:
+					var ac  := lower.get_cell_atlas_coords(cell)
+					var ts  := lower.tile_set
+					if ts != null and ts.get_source(src_id) is TileSetAtlasSource:
+						var atlas := ts.get_source(src_id) as TileSetAtlasSource
+						var td    := atlas.get_tile_data(ac, 0)
+						print("  atlas_coords          = ", ac)
+						print("  tile_data.y_sort_origin = ", td.y_sort_origin if td != null else "N/A")
+						print("  tile world Y (top)    = ", lower.map_to_local(cell).y + lower.global_position.y)
+						print("  comparison Y          = ", lower.map_to_local(cell).y + lower.global_position.y + (td.y_sort_origin if td != null else 0))
+				else:
+					print("  (ningún tile de tree_lower en esta celda)")
+			else:
+				print("  tree_lower no encontrado")

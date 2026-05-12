@@ -21,12 +21,15 @@ size = Vector2(1940, 20)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bridge"]
 size = Vector2(320, 160)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bridge2"]
+size = Vector2(100, 250)
+
 [node name="WorldMap" type="Node2D" unique_id=434354755]
 y_sort_enabled = true
 script = ExtResource("1_wm")
 
 [node name="Player" parent="." unique_id=1065559040 instance=ExtResource("2_pl")]
-position = Vector2(100, 301)
+position = Vector2(-528, -544)
 
 [node name="Limites" type="Node2D" parent="." unique_id=1987930665]
 
@@ -61,12 +64,22 @@ position = Vector2(514, 120)
 z_as_relative = false
 position = Vector2(-956, -895)
 
+[node name="StaticBody" parent="map1/collision" parent_id_path=PackedInt32Array(1234282624, 1975917140) index="0" unique_id=694277666]
+visible = false
+
 [node name="BridgeArea" type="Area2D" parent="." unique_id=1638982597]
 position = Vector2(-215, 95)
 script = ExtResource("99_bridge")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BridgeArea" unique_id=345881968]
 shape = SubResource("RectangleShape2D_bridge")
+
+[node name="BridgeArea2" type="Area2D" parent="." unique_id=1689536741]
+position = Vector2(-706, -235)
+script = ExtResource("99_bridge")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BridgeArea2" unique_id=367723290]
+shape = SubResource("RectangleShape2D_bridge2")
 
 [node name="NPC" parent="." unique_id=747027164 instance=ExtResource("6_k2sq4")]
 position = Vector2(75, -51)
