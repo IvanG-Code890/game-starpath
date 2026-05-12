@@ -53,21 +53,10 @@ func _on_mouse_exited() -> void:
 # ── Reacciones Visuales ────────────────────────────────────────────────────
 
 func _on_stats_changed() -> void:
-	if _initialized:
-		var delta = entity_logic.current_hp - _prev_hp
-		if delta < 0:
-			_spawn_floating_text(str(delta), Color(1.0, 0.2, 0.2))
-		elif delta > 0:
-			_spawn_floating_text("+%d HP" % delta, Color(0.2, 0.9, 0.3))
-
-	_prev_hp = entity_logic.current_hp
 	health_bar.max_value = entity_logic.stats.max_hp
-	health_bar.value     = entity_logic.current_hp
-	mana_bar.max_value   = entity_logic.stats.max_mp
-	mana_bar.value       = entity_logic.current_mp
-
-func _on_defense_changed(defending: bool) -> void:
-	sprite.modulate = Color(0.55, 0.8, 1.0) if defending else Color(1, 1, 1)
+	health_bar.value = entity_logic.current_hp
+	mana_bar.max_value = entity_logic.stats.max_mp
+	mana_bar.value = entity_logic.current_mp
 
 func _on_defeated() -> void:
 	print(name + " ha sido derrotado visualmente.")

@@ -222,6 +222,6 @@ func _on_battle_ended(player_won: bool) -> void:
 
 func _on_btn_reiniciar_pressed() -> void:
 	if _player_won:
-		get_tree().change_scene_to_file("res://Scenes/WorldMap.tscn")
+		get_tree().change_scene_to_file("res://Scenes/World/WorldMap.tscn")
 	else:
 		get_tree().reload_current_scene()

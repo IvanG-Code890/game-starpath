@@ -92,27 +92,23 @@ func player_action_selected(action_name: String) -> void:
 	if current_state != BattleState.PLAYER_INPUT:
 		return
 
-	var attacker = turn_queue.queue[turn_queue.active_index - 1]
-
-	if action_name == "Atacar":
-		action_menu_toggled.emit(false)
-		_start_target_selection(attacker, null)
-		return  # La ejecución continúa en player_target_confirmed()
-
-	# Acciones sin objetivo → ejecutar directamente
 	action_menu_toggled.emit(false)
+
+	var attacker = turn_queue.queue[turn_queue.active_index - 1]
 	_log(attacker.stats.character_name + " usa " + action_name + "!")
 	await get_tree().create_timer(1.0).timeout
 
-	if action_name == "Curar":
+	if action_name == "Atacar":
+		var defender = _get_first_enemy()
+		if defender:
+			defender.take_damage(attacker.stats.attack)
+			_log("¡PUM! " + defender.stats.character_name + " recibe daño.")
+	elif action_name == "Curar":
 		var success = attacker.heal_self()
 		if success:
 			_log(attacker.stats.character_name + " se cura y recupera HP.")
 		else:
 			_log("¡MP insuficiente para curar!")
-	elif action_name == "Defender":
-		attacker.start_defending()
-		_log(attacker.stats.character_name + " se pone en guardia.")
 
 	await get_tree().create_timer(1.0).timeout
 	advance_to_next_turn()

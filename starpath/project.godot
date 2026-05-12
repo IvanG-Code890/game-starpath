@@ -17,9 +17,9 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-Inventory="*res://Scripts/Inventory.gd"
-DialogManager="*res://Scripts/DialogManager.gd"
-ShopManager="*res://Scripts/ShopManager.gd"
+Inventory="*res://Autoloads/Inventory.gd"
+DialogManager="*res://Autoloads/DialogManager.gd"
+ShopManager="*res://Autoloads/ShopManager.gd"
 
 [editor_plugins]
 

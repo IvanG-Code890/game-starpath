@@ -1,12 +1,12 @@
 [gd_scene format=3 uid="uid://1oxeodtlv3o8"]
 
-[ext_resource type="Script" uid="uid://c2yscwkoiddrq" path="res://Scenes/BattleScene.gd" id="1_hb1yk"]
-[ext_resource type="PackedScene" uid="uid://dptgmf513gxau" path="res://Scenes/HeroSprite.tscn" id="2_u810s"]
-[ext_resource type="PackedScene" uid="uid://oovclq3a00nm" path="res://Scenes/EnemySprite.tscn" id="3_8uoga"]
-[ext_resource type="Script" uid="uid://bnj51ommwc0kv" path="res://Scripts/BattleManager.gd" id="4_47u5s"]
-[ext_resource type="Script" uid="uid://cjcioq2fm3bbd" path="res://Scripts/TurnQueue.gd" id="5_2tp6q"]
-[ext_resource type="Script" uid="uid://cd7bdp4cvvyx1" path="res://Scripts/BattleHUD.gd" id="6_bhud"]
-[ext_resource type="PackedScene" uid="uid://b7hbaocp7rvuq" path="res://Scenes/Enemy2Sprite.tscn" id="8_enemy2"]
+[ext_resource type="Script" uid="uid://c2yscwkoiddrq" path="res://Scenes/Battle/BattleScene.gd" id="1_hb1yk"]
+[ext_resource type="PackedScene" uid="uid://dptgmf513gxau" path="res://Scenes/Battle/HeroSprite.tscn" id="2_u810s"]
+[ext_resource type="PackedScene" uid="uid://oovclq3a00nm" path="res://Scenes/Battle/EnemySprite.tscn" id="3_8uoga"]
+[ext_resource type="Script" uid="uid://bnj51ommwc0kv" path="res://Scripts/Battle/BattleManager.gd" id="4_47u5s"]
+[ext_resource type="Script" uid="uid://cjcioq2fm3bbd" path="res://Scripts/Battle/TurnQueue.gd" id="5_2tp6q"]
+[ext_resource type="Script" uid="uid://cd7bdp4cvvyx1" path="res://Scripts/UI/BattleHUD.gd" id="6_bhud"]
+[ext_resource type="PackedScene" uid="uid://b7hbaocp7rvuq" path="res://Scenes/Battle/Enemy2Sprite.tscn" id="8_enemy2"]
 
 [node name="BattleScene" type="Node2D" unique_id=2067720617]
 script = ExtResource("1_hb1yk")

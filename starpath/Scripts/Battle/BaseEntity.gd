@@ -34,27 +34,7 @@ func take_damage(amount: int, is_magical: bool = false):
 		is_alive = false
 		defeated.emit()
 
-func start_defending() -> void:
-	is_defending = true
-	defense_changed.emit(true)
-
-# Descuenta MP y emite stats_changed. Devuelve false si no hay suficiente.
-func spend_mp(amount: int) -> bool:
-	if current_mp < amount:
-		return false
-	current_mp -= amount
-	stats_changed.emit()
-	return true
-
 # Devuelve false si no hay MP suficiente (el BattleManager puede loguear el aviso).
-func heal_hp(amount: int) -> void:
-	current_hp = mini(current_hp + amount, stats.max_hp)
-	stats_changed.emit()
-
-func heal_mp(amount: int) -> void:
-	current_mp = mini(current_mp + amount, stats.max_mp)
-	stats_changed.emit()
-
 func heal_self(hp_amount: int = 30, mp_cost: int = 15) -> bool:
 	if current_mp < mp_cost:
 		return false

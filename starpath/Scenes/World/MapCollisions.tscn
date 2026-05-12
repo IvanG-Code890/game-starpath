@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://lwm3o7fg34bg"]
+
+[sub_resource type="TileSet" id="TileSet_rthq0"]
+tile_size = Vector2i(32, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_p3hv0"]
+size = Vector2(222.667, 162)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_afoaw"]
+size = Vector2(159.333, 61.3333)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wt6jl"]
+size = Vector2(30.6667, 62)
+
+[node name="MapCollisions" type="Node2D" unique_id=980139209]
+
+[node name="Capa de patrones 1" type="TileMapLayer" parent="." unique_id=1466417491]
+tile_set = SubResource("TileSet_rthq0")
+
+[node name="collision" type="Node2D" parent="." unique_id=715434985]
+
+[node name="StaticBody" type="StaticBody2D" parent="collision" unique_id=1493783297]
+position = Vector2(256, 95.3333)
+
+[node name="Rectangle Shape" type="CollisionShape2D" parent="collision/StaticBody" unique_id=1185901167]
+position = Vector2(111.3335, 81)
+shape = SubResource("RectangleShape2D_p3hv0")
+
+[node name="StaticBody2" type="StaticBody2D" parent="collision" unique_id=161203650]
+position = Vector2(256.667, 257.333)
+
+[node name="Rectangle Shape" type="CollisionShape2D" parent="collision/StaticBody2" unique_id=739800629]
+position = Vector2(79.6665, 30.66665)
+shape = SubResource("RectangleShape2D_afoaw")
+
+[node name="StaticBody3" type="StaticBody2D" parent="collision" unique_id=1611613842]
+position = Vector2(448.667, 256.667)
+
+[node name="Rectangle Shape" type="CollisionShape2D" parent="collision/StaticBody3" unique_id=980367639]
+position = Vector2(15.33335, 31)
+shape = SubResource("RectangleShape2D_wt6jl")
