@@ -58,6 +58,9 @@ func _on_stats_changed() -> void:
 	mana_bar.max_value = entity_logic.stats.max_mp
 	mana_bar.value = entity_logic.current_mp
 
+func _on_defense_changed(defending: bool) -> void:
+	sprite.modulate = Color(0.55, 0.8, 1.0) if defending else Color(1, 1, 1)
+
 func _on_defeated() -> void:
 	print(name + " ha sido derrotado visualmente.")
 	var tween = create_tween()
