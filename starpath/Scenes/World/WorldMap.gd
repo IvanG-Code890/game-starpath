@@ -6,9 +6,9 @@ extends Node2D
 func _ready() -> void:
 	AudioManager.play_bgm("exploration")
 	player.menu_requested.connect(pause_menu.toggle)
-	_setup_map_layers()
 	_extract_decorative_tiles()
 	_elevate_tall_objects()
+	_setup_map_layers()   # DESPUÉS de modificar tiles: garantiza z_index correcto
 	call_deferred("_setup_rio_layer")
 	call_deferred("_setup_camera_limits")
 
@@ -31,9 +31,11 @@ func _setup_map_layers() -> void:
 	var object_layers := ["tree", "building_up", "farm_up"]
 	for child in map.get_children():
 		if child.name in ground_layers:
-			child.z_index = -10
+			child.z_index       = -10
+			child.z_as_relative = false
 		elif child.name in object_layers:
-			child.z_index = 10
+			child.z_index       = 10
+			child.z_as_relative = false
 		# Mueve los tiles de agua a la capa de colisión 2
 		# para que BridgeArea pueda ignorarlos cambiando la máscara del jugador
 		if child.name == "water" and child is TileMapLayer:
@@ -83,10 +85,11 @@ func _extract_decorative_tiles() -> void:
 		deco_layer.set_cell(cell, src, ac, alt)
 		tree_layer.erase_cell(cell)
 
-# Mueve la antorcha (y otros objetos altos del building layer) a z=10
-# para que cubran al jugador igual que los árboles.
-# ID 907 → atlas (3,113)  cabeza antorcha
-# ID 915 → atlas (3,114)  patas  antorcha
+# Separa la capa "tree" en dos partes:
+#   • Capa "tree" original (z=10):  conserva las hojas/copa  → tapa al jugador (z=0)
+#   • tree_trunk (z=-1):            recibe los troncos       → jugador encima del tronco
+# Con y_sort_enabled=false en WorldMap, el z_index es el único criterio de orden,
+# así que z=10 > z=0 (jugador) > z=-1 funciona siempre, independientemente de la Y.
 func _elevate_tall_objects() -> void:
 	var map := get_node_or_null("map1")
 	if map == null:
@@ -120,41 +123,40 @@ func _elevate_tall_objects() -> void:
 			tall_layer.set_cell(cell, src, ac, alt)
 			building_layer.erase_cell(cell)
 
-	# ── Borde inferior del dosel (filas 2-4 de "tree") ───────────────────────
-	# Estas filas son el collar/tronco superior del árbol. Al estar en z=10
-	# tapan al jugador cuando está cerca aunque sea por el sur.
-	# Se mueven a una capa hija de WorldMap con y_sort (z=0) para que el
-	# jugador quede delante al sur y detrás al norte.
-	# Los troncos de "grass" (z=-10) no se tocan: jugador siempre delante.
-	var tree_layer2 : TileMapLayer = null
+	# ── Árboles ──────────────────────────────────────────────────────────────
+	# Separa troncos (atlas.y == 2) a una nueva capa z=-1.
+	# Las hojas (atlas.y != 2) se quedan en la capa "tree" original.
+	# _setup_map_layers() le asignará z=10 a "tree", que con y_sort=false
+	# garantiza que las hojas SIEMPRE queden encima del jugador (z=0).
+	var tree_layer2: TileMapLayer = null
 	for child in map.get_children():
 		if child.name == "tree" and child is TileMapLayer:
 			tree_layer2 = child
 			break
-	if tree_layer2 != null:
-		var lower_layer := TileMapLayer.new()
-		lower_layer.name          = "tree_lower"
-		lower_layer.z_index       = -1      # z dinámico: se actualiza en _process
-		lower_layer.z_as_relative = false   # z absoluto: -1 = debajo jugador (z=0)
-		lower_layer.position      = map.position
-		lower_layer.tile_set      = tree_layer2.tile_set
-		add_child(lower_layer)
+	if tree_layer2 == null:
+		return
 
-		var cells_lower: Array = []
-		for cell in tree_layer2.get_used_cells():
-			var ac : Vector2i = tree_layer2.get_cell_atlas_coords(cell)
-			if ac.y >= 2 and ac.y <= 4:
-				cells_lower.append(cell)
-		for cell in cells_lower:
-			var sid := tree_layer2.get_cell_source_id(cell)
-			var alt := tree_layer2.get_cell_alternative_tile(cell)
-			var ac  : Vector2i = tree_layer2.get_cell_atlas_coords(cell)
-			lower_layer.set_cell(cell, sid, ac, alt)
-			tree_layer2.erase_cell(cell)
+	var tree_trunk := TileMapLayer.new()
+	tree_trunk.name          = "tree_trunk"
+	tree_trunk.z_index       = -1
+	tree_trunk.z_as_relative = false
+	tree_trunk.tile_set      = tree_layer2.tile_set
+	map.add_child(tree_trunk)
 
-# Actualiza el z_index de tree_lower cada frame:
-# - Si el jugador pisa un tile del collar → z=1 (collar encima del jugador)
-# - Si no                                → z=-1 (jugador encima del collar)
+	# Mueve SOLO los troncos a tree_trunk y los borra de la capa original.
+	# Las hojas permanecen en "tree" (z=10 tras _setup_map_layers).
+	var trunk_cells: Array = []
+	for cell in tree_layer2.get_used_cells():
+		if tree_layer2.get_cell_atlas_coords(cell).y == 2:
+			trunk_cells.append(cell)
+
+	for cell in trunk_cells:
+		var src := tree_layer2.get_cell_source_id(cell)
+		var alt := tree_layer2.get_cell_alternative_tile(cell)
+		var ac  := tree_layer2.get_cell_atlas_coords(cell)
+		tree_trunk.set_cell(cell, src, ac, alt)
+		tree_layer2.erase_cell(cell)
+
 func _setup_camera_limits() -> void:
 	var map := get_node_or_null("map1")
 	if map == null:
@@ -180,21 +182,3 @@ func _setup_camera_limits() -> void:
 	cam.limit_top    = int(origin.y + rect.position.y * tile_size.y)
 	cam.limit_right  = int(origin.x + (rect.position.x + rect.size.x) * tile_size.x)
 	cam.limit_bottom = int(origin.y + (rect.position.y + rect.size.y) * tile_size.y)
-
-func _process(_delta: float) -> void:
-	var lower := get_node_or_null("tree_lower") as TileMapLayer
-	if lower == null:
-		return
-	var cell := lower.local_to_map(lower.to_local(player.global_position))
-	# Busca tiles del collar en la celda actual y en las 2 filas hacia el sur
-	# (± 1 columna). Así el jugador queda tapado cuando está justo encima del collar.
-	# Solo miramos sur (dy >= 0) para no activar z=1 cuando el collar ya quedó al norte.
-	var under_canopy := false
-	for dy in range(0, 3):
-		for dx in range(-1, 2):
-			if lower.get_cell_source_id(Vector2i(cell.x + dx, cell.y + dy)) != -1:
-				under_canopy = true
-				break
-		if under_canopy:
-			break
-	lower.z_index = 1 if under_canopy else -1
