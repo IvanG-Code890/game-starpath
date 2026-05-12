@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="SkillData" format=3 uid="uid://bjgjsk12mkrc7"]
+
+[ext_resource type="Script" uid="uid://knxc2hn10nsh" path="res://Scripts/SkillData.gd" id="1_skill"]
+
+[resource]
+script = ExtResource("1_skill")
+skill_name = "Fortaleza"
+damage = -40
+mp_cost = 8
+targets_enemy = false

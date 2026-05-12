@@ -1,0 +1,136 @@
+[gd_scene format=3 uid="uid://1oxeodtlv3o8"]
+
+[ext_resource type="Script" uid="uid://c2yscwkoiddrq" path="res://Scenes/Battle/BattleScene.gd" id="1_hb1yk"]
+[ext_resource type="PackedScene" uid="uid://dptgmf513gxau" path="res://Scenes/Battle/HeroSprite.tscn" id="2_u810s"]
+[ext_resource type="PackedScene" uid="uid://oovclq3a00nm" path="res://Scenes/Battle/EnemySprite.tscn" id="3_8uoga"]
+[ext_resource type="Script" uid="uid://bnj51ommwc0kv" path="res://Scripts/Battle/BattleManager.gd" id="4_47u5s"]
+[ext_resource type="Script" uid="uid://cjcioq2fm3bbd" path="res://Scripts/Battle/TurnQueue.gd" id="5_2tp6q"]
+[ext_resource type="Script" uid="uid://cd7bdp4cvvyx1" path="res://Scripts/UI/BattleHUD.gd" id="6_bhud"]
+[ext_resource type="PackedScene" uid="uid://b7hbaocp7rvuq" path="res://Scenes/Battle/Enemy2Sprite.tscn" id="8_enemy2"]
+
+[node name="BattleScene" type="Node2D" unique_id=2067720617]
+script = ExtResource("1_hb1yk")
+
+[node name="HeroSprite" parent="." unique_id=766005803 instance=ExtResource("2_u810s")]
+position = Vector2(-231, 33)
+
+[node name="BattleManager" type="Node" parent="." unique_id=1446133905 node_paths=PackedStringArray("turn_queue")]
+script = ExtResource("4_47u5s")
+turn_queue = NodePath("../TurnQueue")
+
+[node name="TurnQueue" type="Node" parent="." unique_id=797149600]
+script = ExtResource("5_2tp6q")
+
+[node name="EnemySprite" parent="." unique_id=1135229011 instance=ExtResource("3_8uoga")]
+position = Vector2(87, -28)
+
+[node name="Enemy2Sprite" parent="." unique_id=320145721 instance=ExtResource("8_enemy2")]
+position = Vector2(87, 100)
+
+[node name="BattleHUD" type="CanvasLayer" parent="." unique_id=320145690]
+script = ExtResource("6_bhud")
+
+[node name="Container" type="VBoxContainer" parent="BattleHUD" unique_id=320145691]
+offset_left = 870.0
+offset_top = 50.0
+offset_right = 1140.0
+offset_bottom = 600.0
+theme_override_constants/separation = 4
+
+[node name="BattleUI" type="CanvasLayer" parent="." unique_id=1536480596]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI" unique_id=1314894546]
+offset_left = 20.0
+offset_top = 450.0
+offset_right = 180.0
+offset_bottom = 490.0
+theme_override_constants/separation = 2
+
+[node name="AttackButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=218713054]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Atacar"
+
+[node name="CurarButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145680]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Curar (15 MP)"
+
+[node name="DefenderButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145681]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Defender"
+
+[node name="MagiaButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145682]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Magia ▶"
+
+[node name="ObjetosButton" type="Button" parent="BattleUI/VBoxContainer" unique_id=320145792]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Objetos ▶"
+
+[node name="CancelarButton" type="Button" parent="BattleUI" unique_id=320145800]
+visible = false
+offset_left = 20.0
+offset_top = 412.0
+offset_right = 180.0
+offset_bottom = 447.0
+text = "Cancelar"
+
+[node name="SkillsPanel" type="PanelContainer" parent="BattleUI" unique_id=320145793]
+visible = false
+offset_left = 80.0
+offset_top = 470.0
+offset_right = 320.0
+offset_bottom = 500.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/SkillsPanel" unique_id=320145794]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ObjetosPanel" type="PanelContainer" parent="BattleUI" unique_id=320145795]
+visible = false
+offset_left = 80.0
+offset_top = 470.0
+offset_right = 320.0
+offset_bottom = 500.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ObjetosPanel" unique_id=320145796]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="LblSinObjetos" type="Label" parent="BattleUI/ObjetosPanel/VBoxContainer" unique_id=320145797]
+layout_mode = 2
+text = "Sin objetos"
+
+[node name="Panel" type="Panel" parent="BattleUI" unique_id=98372456]
+offset_top = -27.0
+offset_right = 1156.0
+offset_bottom = 613.0
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/Panel" unique_id=298284719]
+layout_mode = 0
+offset_left = 447.0
+offset_top = 245.0
+offset_right = 525.0
+offset_bottom = 285.0
+mouse_filter = 2
+
+[node name="LblResolution" type="Label" parent="BattleUI/Panel/VBoxContainer" unique_id=1844463063]
+layout_mode = 2
+text = "Resultado"
+
+[node name="BtnReplay" type="Button" parent="BattleUI/Panel/VBoxContainer" unique_id=1874950086]
+layout_mode = 2
+text = "Volver a jugar"
+
+[connection signal="pressed" from="BattleUI/VBoxContainer/AttackButton" to="." method="_on_btn_atacar_pressed"]
+[connection signal="pressed" from="BattleUI/VBoxContainer/CurarButton" to="." method="_on_btn_curar_pressed"]
+[connection signal="pressed" from="BattleUI/VBoxContainer/DefenderButton" to="." method="_on_btn_defender_pressed"]
+[connection signal="pressed" from="BattleUI/VBoxContainer/MagiaButton" to="." method="_on_btn_magia_pressed"]
+[connection signal="pressed" from="BattleUI/VBoxContainer/ObjetosButton" to="." method="_on_btn_objetos_pressed"]
+[connection signal="pressed" from="BattleUI/CancelarButton" to="." method="_on_btn_cancelar_pressed"]
+[connection signal="pressed" from="BattleUI/Panel/VBoxContainer/BtnReplay" to="." method="_on_btn_reiniciar_pressed"]
