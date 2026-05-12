@@ -53,8 +53,8 @@ func _build_menu() -> void:
 	var h := 160 if is_merchant else 100
 	panel.offset_left   = -110
 	panel.offset_right  =  110
-	panel.offset_top    = -h / 2
-	panel.offset_bottom =  h / 2
+	panel.offset_top    = -h / 2.0
+	panel.offset_bottom =  h / 2.0
 
 	var style := StyleBoxFlat.new()
 	style.bg_color   = C_BG

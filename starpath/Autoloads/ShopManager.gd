@@ -426,7 +426,7 @@ func _populate_sell_items() -> void:
 		return
 
 	for item: ItemData in _sell_items:
-		var sell_price: int = maxi(1, item.price / 2)
+		var sell_price: int = maxi(1, item.price >> 1)
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 12)
 		_sell_vbox.add_child(row)
@@ -472,7 +472,7 @@ func _try_sell() -> void:
 	if _sell_items.is_empty() or _sell_selected >= _sell_items.size():
 		return
 	var item := _sell_items[_sell_selected]
-	var sell_price: int = maxi(1, item.price / 2)
+	var sell_price: int = maxi(1, item.price >> 1)
 	Inventory.gold += sell_price
 	Inventory.remove_item(item)
 	_sell_msg_lbl.text = item.item_name + " vendido: +%d ✦" % sell_price

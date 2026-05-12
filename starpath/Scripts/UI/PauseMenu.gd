@@ -17,10 +17,14 @@ const C_BTN_NORM  := Color(0.14, 0.20, 0.38, 1.00)   # botón normal
 const C_BTN_HOV   := Color(0.20, 0.35, 0.60, 1.00)   # botón hover
 const C_ACCENT    := Color(0.40, 0.80, 1.00, 1.00)   # acento
 
-var _main_panel:  Control
-var _items_panel: Control
-var _equip_panel: Control
-var _open_frame:  int = -1   # frame en que se abrió; evita cierre inmediato
+var _main_panel:   Control
+var _items_panel:  Control
+var _equip_panel:  Control
+var _slot_panel:   Control
+var _open_frame:   int    = -1
+var _slot_mode:    String = "save"
+var _feedback_lbl:      Label
+var _slot_feedback_lbl: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -56,7 +60,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if Engine.get_process_frames() == _open_frame:
 				get_viewport().set_input_as_handled()
 				return
-			if _items_panel.visible or _equip_panel.visible:
+			if _items_panel.visible or _equip_panel.visible or _slot_panel.visible:
 				_show_main()
 			else:
 				close()
@@ -75,14 +79,16 @@ func _build_ui() -> void:
 	_main_panel  = _build_main_panel()
 	_items_panel = _build_items_panel()
 	_equip_panel = _build_equip_panel()
+	_slot_panel  = _build_slot_panel()
 	add_child(_main_panel)
 	add_child(_items_panel)
 	add_child(_equip_panel)
+	add_child(_slot_panel)
 
 # ── Panel principal ────────────────────────────────────────────────────────────
 
 func _build_main_panel() -> Control:
-	var root := _make_centered_root(520, 370)
+	var root := _make_centered_root(520, 470)
 
 	var panel := root.get_child(0) as PanelContainer
 	_style_panel(panel, C_PANEL, C_BORDER)
@@ -144,9 +150,31 @@ func _build_main_panel() -> Control:
 	btn_items.pressed.connect(_show_items)
 	right.add_child(btn_items)
 
+	right.add_child(_separator_h(C_BORDER, 1))
+	right.add_child(_spacer(2))
+
+	var btn_save := _make_button("💾  Guardar partida", 170, 38)
+	btn_save.pressed.connect(func(): _show_slots("save"))
+	right.add_child(btn_save)
+
+	var btn_load := _make_button("📂  Cargar partida", 170, 38)
+	btn_load.pressed.connect(func(): _show_slots("load"))
+	right.add_child(btn_load)
+
+	right.add_child(_spacer(2))
+	right.add_child(_separator_h(C_BORDER, 1))
+	right.add_child(_spacer(4))
+
 	var btn_close := _make_button("✕  Cerrar  [Esc]", 170, 38)
 	btn_close.pressed.connect(close)
 	right.add_child(btn_close)
+
+	_feedback_lbl = Label.new()
+	_feedback_lbl.add_theme_font_size_override("font_size", 12)
+	_feedback_lbl.add_theme_color_override("font_color", C_ACCENT)
+	_feedback_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_feedback_lbl.modulate.a = 0.0
+	right.add_child(_feedback_lbl)
 
 	return root
 
@@ -189,18 +217,29 @@ func _show_main() -> void:
 	_main_panel.visible  = true
 	_items_panel.visible = false
 	_equip_panel.visible = false
+	_slot_panel.visible  = false
 
 func _show_items() -> void:
 	_main_panel.visible  = false
 	_items_panel.visible = true
 	_equip_panel.visible = false
+	_slot_panel.visible  = false
 	_refresh_item_list()
 
 func _show_equip() -> void:
 	_main_panel.visible  = false
 	_items_panel.visible = false
 	_equip_panel.visible = true
+	_slot_panel.visible  = false
 	_refresh_equip()
+
+func _show_slots(mode: String) -> void:
+	_slot_mode = mode
+	_main_panel.visible  = false
+	_items_panel.visible = false
+	_equip_panel.visible = false
+	_slot_panel.visible  = true
+	_refresh_slot_list()
 
 # ── Refresco de datos ─────────────────────────────────────────────────────────
 
@@ -467,6 +506,132 @@ func _refresh_equip() -> void:
 
 	if not has_any:
 		_lbl_colored(list, "Sin equipo disponible.", 13, C_MUTED)
+
+# ── Guardar / Cargar ──────────────────────────────────────────────────────────
+
+func _do_save(slot: int) -> void:
+	SaveManager.save_game(slot)
+	_refresh_slot_list()
+	_show_slot_feedback("✓  Guardado en ranura %d" % (slot + 1))
+
+func _do_load(slot: int) -> void:
+	SaveManager.load_game(slot)
+	_refresh_stats()
+	_show_slot_feedback("✓  Partida cargada")
+
+func _show_feedback(msg: String) -> void:
+	_feedback_lbl.text = msg
+	_feedback_lbl.modulate.a = 1.0
+	var tw := create_tween()
+	tw.tween_interval(1.5)
+	tw.tween_property(_feedback_lbl, "modulate:a", 0.0, 0.5)
+
+func _show_slot_feedback(msg: String) -> void:
+	_slot_feedback_lbl.text = msg
+	_slot_feedback_lbl.modulate.a = 1.0
+	var tw := create_tween()
+	tw.tween_interval(1.5)
+	tw.tween_property(_slot_feedback_lbl, "modulate:a", 0.0, 0.5)
+
+# ── Panel de ranuras ───────────────────────────────────────────────────────────
+
+func _build_slot_panel() -> Control:
+	var root := _make_centered_root(520, 460)
+	root.visible = false
+
+	var panel := root.get_child(0) as PanelContainer
+	_style_panel(panel, C_PANEL, C_BORDER)
+
+	var margin := panel.get_child(0) as MarginContainer
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	margin.add_child(vbox)
+
+	var title_lbl := Label.new()
+	title_lbl.name = "SlotTitle"
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_font_size_override("font_size", 16)
+	title_lbl.add_theme_color_override("font_color", C_TITLE)
+	vbox.add_child(title_lbl)
+
+	vbox.add_child(_separator_h(C_BORDER, 1))
+	vbox.add_child(_spacer(2))
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 320)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(scroll)
+
+	var list := VBoxContainer.new()
+	list.name = "SlotList"
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 4)
+	scroll.add_child(list)
+
+	vbox.add_child(_spacer(2))
+	vbox.add_child(_separator_h(C_BORDER, 1))
+
+	_slot_feedback_lbl = Label.new()
+	_slot_feedback_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_slot_feedback_lbl.add_theme_font_size_override("font_size", 12)
+	_slot_feedback_lbl.add_theme_color_override("font_color", C_ACCENT)
+	_slot_feedback_lbl.modulate.a = 0.0
+	vbox.add_child(_slot_feedback_lbl)
+
+	var btn_back := _make_button("◀  Volver", 150, 34)
+	btn_back.pressed.connect(_show_main)
+	vbox.add_child(btn_back)
+
+	return root
+
+func _refresh_slot_list() -> void:
+	var title_lbl := _slot_panel.find_child("SlotTitle", true, false) as Label
+	if title_lbl:
+		title_lbl.text = "💾  GUARDAR PARTIDA" if _slot_mode == "save" else "📂  CARGAR PARTIDA"
+
+	var list := _slot_panel.find_child("SlotList", true, false) as VBoxContainer
+	for child in list.get_children():
+		child.queue_free()
+
+	for i in SaveManager.SLOT_COUNT:
+		var info := SaveManager.get_slot_info(i)
+		var row  := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		list.add_child(row)
+
+		# Número de ranura
+		var num_lbl := Label.new()
+		num_lbl.text = "%02d" % (i + 1)
+		num_lbl.custom_minimum_size = Vector2(24, 0)
+		num_lbl.add_theme_font_size_override("font_size", 13)
+		num_lbl.add_theme_color_override("font_color", C_MUTED)
+		row.add_child(num_lbl)
+
+		# Info de la ranura
+		var info_lbl := Label.new()
+		info_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info_lbl.add_theme_font_size_override("font_size", 13)
+		if info["empty"]:
+			info_lbl.text = "── Vacía ──"
+			info_lbl.add_theme_color_override("font_color", C_MUTED)
+		else:
+			info_lbl.text = "%s   ✦ %d oro" % [info["save_date"], info["gold"]]
+			info_lbl.add_theme_color_override("font_color", C_TEXT)
+		row.add_child(info_lbl)
+
+		# Botón de acción
+		var captured_i := i
+		if _slot_mode == "save":
+			var lbl := "Guardar" if info["empty"] else "Sobreescribir"
+			var btn := _make_button(lbl, 118, 30)
+			btn.pressed.connect(func(): _do_save(captured_i))
+			row.add_child(btn)
+		else:
+			var btn := _make_button("Cargar", 118, 30)
+			btn.disabled = info["empty"]
+			if not info["empty"]:
+				btn.pressed.connect(func(): _do_load(captured_i))
+			row.add_child(btn)
 
 func _add_slot_row(parent: Node, label: String, item: ItemData, on_unequip: Callable) -> void:
 	var row := HBoxContainer.new()

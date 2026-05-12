@@ -13,6 +13,7 @@ var _last_dir: String = "down"
 const SPRITE_PATH := "res://Assets/Characters/lyra.png"
 
 func _ready() -> void:
+	add_to_group("player")
 	var sprite_texture := load(SPRITE_PATH) as Texture2D
 	if sprite_texture:
 		_setup_animations(sprite_texture)
@@ -111,7 +112,7 @@ func _unhandled_input(event: InputEvent) -> void:
 						var atlas := ts.get_source(src_id) as TileSetAtlasSource
 						var td    := atlas.get_tile_data(ac, 0)
 						print("  atlas_coords          = ", ac)
-						print("  tile_data.y_sort_origin = ", td.y_sort_origin if td != null else "N/A")
+						print("  tile_data.y_sort_origin = ", str(td.y_sort_origin) if td != null else "N/A")
 						print("  tile world Y (top)    = ", lower.map_to_local(cell).y + lower.global_position.y)
 						print("  comparison Y          = ", lower.map_to_local(cell).y + lower.global_position.y + (td.y_sort_origin if td != null else 0))
 				else:
