@@ -1,0 +1,297 @@
+[gd_scene format=3 uid="uid://c3kjriel265ee"]
+
+[ext_resource type="Script" uid="uid://cwuxkptq52e35" path="res://ui/menu_inicio.gd" id="1_menu"]
+[ext_resource type="Texture2D" uid="uid://dngc5ykrypope" path="res://Assets/Images/3d-illustration-rpg-backgrounds-battle-free-photo.jpeg" id="2_bg"]
+[ext_resource type="FontFile" uid="uid://c6xkn5sml1f3b" path="res://Assets/Fonts/CinzelDecorative-Bold.ttf" id="3_font"]
+[ext_resource type="AudioStream" uid="uid://d14r7rp3qkbg0" path="res://Assets/Audio/BGM/Zelda Main Theme.mp3" id="4_bgm"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_4gkdq"]
+texture = ExtResource("2_bg")
+modulate_color = Color(0.42, 0.42, 0.45, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tfjwl"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.20392157)
+shadow_size = 5
+shadow_offset = Vector2(0, 3.41)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_or6mk"]
+bg_color = Color(0.63529414, 0.63529414, 0.63529414, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.20392157)
+shadow_size = 5
+shadow_offset = Vector2(0, 3.41)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gvx18"]
+bg_color = Color(0.8217887, 0.82178867, 0.82178867, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.20392157)
+shadow_size = 5
+shadow_offset = Vector2(0, 3.41)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_or6mk"]
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_ce3w2"]
+color = Color(1, 1, 1, 1)
+thickness = 6
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_n45e2"]
+color = Color(0.15294118, 0.5411765, 0.9411765, 1)
+thickness = 6
+
+[node name="TitleMenu" type="Control" unique_id=337802864]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="Panel" parent="." unique_id=1904648837]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_4gkdq")
+
+[node name="TitleLabel" type="Label" parent="." unique_id=959093865]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -280.0
+offset_right = 280.0
+offset_bottom = -178.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 10
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 88
+text = "Starpath"
+horizontal_alignment = 1
+
+[node name="MainButtons" type="VBoxContainer" parent="." unique_id=1669186956]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -120.0
+offset_right = 200.0
+offset_bottom = 228.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 9
+
+[node name="NewGameButton" type="Button" parent="MainButtons" unique_id=390795213]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_constants/h_separation = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_tfjwl")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_or6mk")
+theme_override_styles/hover = SubResource("StyleBoxFlat_gvx18")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_or6mk")
+text = "Nueva partida"
+
+[node name="LoadGameButton" type="Button" parent="MainButtons" unique_id=390795214]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_constants/h_separation = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_tfjwl")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_or6mk")
+theme_override_styles/hover = SubResource("StyleBoxFlat_gvx18")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_or6mk")
+text = "Cargar partida"
+
+[node name="OptionsButton" type="Button" parent="MainButtons" unique_id=1280165046]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_constants/h_separation = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_tfjwl")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_or6mk")
+theme_override_styles/hover = SubResource("StyleBoxFlat_gvx18")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_or6mk")
+text = "Opciones"
+
+[node name="ExitButton" type="Button" parent="MainButtons" unique_id=959509326]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_constants/h_separation = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_tfjwl")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_or6mk")
+theme_override_styles/hover = SubResource("StyleBoxFlat_gvx18")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_or6mk")
+text = "Salir del juego"
+
+[node name="Options" type="Panel" parent="." unique_id=927274993]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -210.0
+offset_right = 260.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="OptionsMargin" type="MarginContainer" parent="Options" unique_id=1114503389]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Options/OptionsMargin" unique_id=1398701929]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="Options/OptionsMargin/VBox" unique_id=1373365727]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 30
+text = "Opciones"
+horizontal_alignment = 1
+
+[node name="MusicRow" type="HBoxContainer" parent="Options/OptionsMargin/VBox" unique_id=822478016]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="MusicVolumeLabel" type="Label" parent="Options/OptionsMargin/VBox/MusicRow" unique_id=1672030347]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+text = "Volumen de música"
+vertical_alignment = 1
+
+[node name="MusicVolumeSlider" type="HSlider" parent="Options/OptionsMargin/VBox/MusicRow" unique_id=733286669]
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/slider = SubResource("StyleBoxLine_ce3w2")
+theme_override_styles/grabber_area = SubResource("StyleBoxLine_n45e2")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBoxLine_n45e2")
+max_value = 1.0
+step = 0.01
+
+[node name="SFXRow" type="HBoxContainer" parent="Options/OptionsMargin/VBox" unique_id=1201878802]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SFXVolumeLabel" type="Label" parent="Options/OptionsMargin/VBox/SFXRow" unique_id=1201878801]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+text = "Volumen de efectos"
+vertical_alignment = 1
+
+[node name="SFXVolumeSlider" type="HSlider" parent="Options/OptionsMargin/VBox/SFXRow" unique_id=1526689112]
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/slider = SubResource("StyleBoxLine_ce3w2")
+theme_override_styles/grabber_area = SubResource("StyleBoxLine_n45e2")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBoxLine_n45e2")
+max_value = 1.0
+step = 0.01
+
+[node name="WindowModeRow" type="HBoxContainer" parent="Options/OptionsMargin/VBox" unique_id=1884085630]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="WindowModeLabel" type="Label" parent="Options/OptionsMargin/VBox/WindowModeRow" unique_id=1884085631]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+text = "Modo de ventana"
+vertical_alignment = 1
+
+[node name="WindowModeOption" type="OptionButton" parent="Options/OptionsMargin/VBox/WindowModeRow" unique_id=1884085632]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+
+[node name="Spacer" type="Control" parent="Options/OptionsMargin/VBox" unique_id=1884085633]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BackButton" type="Button" parent="Options/OptionsMargin/VBox" unique_id=1459597790]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_constants/h_separation = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_tfjwl")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_or6mk")
+theme_override_styles/hover = SubResource("StyleBoxFlat_gvx18")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_or6mk")
+text = "Volver"
+
+[node name="MenuMusic" type="AudioStreamPlayer" parent="." unique_id=1444638141]
+stream = ExtResource("4_bgm")
+autoplay = true
+
+[connection signal="pressed" from="MainButtons/NewGameButton" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="MainButtons/LoadGameButton" to="." method="_on_load_game_pressed"]
+[connection signal="pressed" from="MainButtons/OptionsButton" to="." method="_on_options_pressed"]
+[connection signal="pressed" from="MainButtons/ExitButton" to="." method="_on_exit_pressed"]
+[connection signal="item_selected" from="Options/OptionsMargin/VBox/WindowModeRow/WindowModeOption" to="." method="_on_window_mode_selected"]
+[connection signal="pressed" from="Options/OptionsMargin/VBox/BackButton" to="." method="_on_back_options_pressed"]
