@@ -6,6 +6,7 @@ extends Control
 @onready var music_slider: HSlider = $Options/OptionsMargin/VBox/MusicRow/MusicVolumeSlider
 @onready var sfx_slider: HSlider = $Options/OptionsMargin/VBox/SFXRow/SFXVolumeSlider
 @onready var window_mode_option: OptionButton = $Options/OptionsMargin/VBox/WindowModeRow/WindowModeOption
+@onready var menu_music: AudioStreamPlayer = $MenuMusic
 
 # ── UI dinámica ───────────────────────────────────────────────────────────────
 var _music_pct: Label
@@ -33,7 +34,23 @@ func _ready() -> void:
 #  AUDIO
 # ══════════════════════════════════════════════════════════════════════════════
 
+func _ensure_bus(bus_name: String) -> int:
+	var idx := AudioServer.get_bus_index(bus_name)
+	if idx != -1:
+		return idx
+	# Crear el bus si no existe
+	var new_idx := AudioServer.bus_count
+	AudioServer.add_bus(new_idx)
+	AudioServer.set_bus_name(new_idx, bus_name)
+	AudioServer.set_bus_send(new_idx, "Master")
+	return new_idx
+
+
 func _setup_audio() -> void:
+	# Asegurar que los buses existan
+	_ensure_bus("Music")
+	_ensure_bus("SFX")
+
 	# Crear etiquetas de porcentaje junto a cada slider
 	_music_pct = _make_pct_label()
 	music_slider.get_parent().add_child(_music_pct)
@@ -43,18 +60,12 @@ func _setup_audio() -> void:
 
 	# Valor inicial desde el bus
 	var m_bus := AudioServer.get_bus_index("Music")
-	if m_bus != -1:
-		var db := AudioServer.get_bus_volume_db(m_bus)
-		music_slider.set_value_no_signal(db_to_linear(db) if db > -79.0 else 0.0)
-	else:
-		music_slider.set_value_no_signal(0.5)
+	var m_db := AudioServer.get_bus_volume_db(m_bus)
+	music_slider.set_value_no_signal(db_to_linear(m_db) if m_db > -79.0 else 0.0)
 
 	var s_bus := AudioServer.get_bus_index("SFX")
-	if s_bus != -1:
-		var db := AudioServer.get_bus_volume_db(s_bus)
-		sfx_slider.set_value_no_signal(db_to_linear(db) if db > -79.0 else 0.0)
-	else:
-		sfx_slider.set_value_no_signal(0.5)
+	var s_db := AudioServer.get_bus_volume_db(s_bus)
+	sfx_slider.set_value_no_signal(db_to_linear(s_db) if s_db > -79.0 else 0.0)
 
 	_music_pct.text = "%d%%" % int(music_slider.value * 100)
 	_sfx_pct.text = "%d%%" % int(sfx_slider.value * 100)
@@ -77,9 +88,14 @@ func _make_pct_label() -> Label:
 
 
 func _on_music_changed(val: float) -> void:
+	var db := linear_to_db(val) if val > 0.0 else -80.0
+	# Controlar el bus
 	var bus := AudioServer.get_bus_index("Music")
 	if bus != -1:
-		AudioServer.set_bus_volume_db(bus, linear_to_db(val) if val > 0.0 else -80.0)
+		AudioServer.set_bus_volume_db(bus, db)
+	# Controlar directamente el reproductor de música del menú
+	if menu_music:
+		menu_music.volume_db = db
 	_music_pct.text = "%d%%" % int(val * 100)
 
 

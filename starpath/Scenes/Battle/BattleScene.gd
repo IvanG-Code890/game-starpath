@@ -213,18 +213,20 @@ func _on_skill_btn_pressed(skill: SkillData) -> void:
 func _on_battle_ended(player_won: bool) -> void:
 	_player_won          = player_won
 	menu_combate.visible = false
-	end_panel.visible    = true
+
 	if player_won:
+		end_panel.visible    = true
 		result_label.text = "¡VICTORIA!"
 		replay_btn.text   = "Volver al mapa"
 		AudioManager.play_bgm("victory", false)
 	else:
-		result_label.text = "DERROTA..."
-		replay_btn.text   = "Reintentar"
+		# Pantalla de Game Over completa
 		AudioManager.stop_bgm()
+		await get_tree().create_timer(1.5).timeout
+		var game_over_scene := preload("res://Scenes/UI/GameOver.tscn")
+		var game_over := game_over_scene.instantiate()
+		get_tree().current_scene.add_child(game_over)
 
 func _on_btn_reiniciar_pressed() -> void:
-	if _player_won:
-		get_tree().change_scene_to_file("res://Scenes/World/WorldMap.tscn")
-	else:
-		get_tree().reload_current_scene()
+	get_tree().change_scene_to_file("res://Scenes/World/WorldMap.tscn")
+

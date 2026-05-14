@@ -288,6 +288,7 @@ text = "Volver"
 [node name="MenuMusic" type="AudioStreamPlayer" parent="." unique_id=1444638141]
 stream = ExtResource("4_bgm")
 autoplay = true
+bus = &"Music"
 
 [connection signal="pressed" from="MainButtons/NewGameButton" to="." method="_on_new_game_pressed"]
 [connection signal="pressed" from="MainButtons/LoadGameButton" to="." method="_on_load_game_pressed"]
