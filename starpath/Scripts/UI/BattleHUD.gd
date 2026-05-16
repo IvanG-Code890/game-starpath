@@ -63,6 +63,16 @@ func _build_row(entity: BaseEntity) -> void:
 	$Container.add_child(panel)
 	_panels[entity] = panel
 
+	# El HUD es solo visual: ignorar todos los eventos de ratón para que
+	# los clics pasen al mundo 2D y lleguen a las ClickArea de los enemigos.
+	_set_mouse_ignore(panel)
+
+func _set_mouse_ignore(node: Node) -> void:
+	if node is Control:
+		(node as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		_set_mouse_ignore(child)
+
 func _build_bar_row(prefix: String, color: Color, val: int, max_val: int) -> Array:
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 6)

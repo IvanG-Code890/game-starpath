@@ -14,4 +14,7 @@ enum ClassType { GUERRERO, MAGO, PICARO, SANADOR, PALADIN, ARQUERO }
 
 ## XP que otorga este personaje/enemigo al ser derrotado.
 ## Si es 0 el sistema usa la fórmula (max_hp/2 + attack) como fallback.
-@export var xp_reward: int = 0
+@export var xp_reward:   int   = 0
+@export var gold_reward: int   = 10
+## Probabilidad de tirar un drop (0.0 = nunca, 1.0 = siempre).
+@export var drop_chance: float = 0.30

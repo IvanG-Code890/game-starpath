@@ -1,7 +1,11 @@
 [gd_scene format=3 uid="uid://benemy00001"]
 
 [ext_resource type="Script" path="res://Scripts/World/Enemy.gd" id="1_enemy"]
-[ext_resource type="Texture2D" path="res://icon.svg" id="2_icon"]
+[ext_resource type="Texture2D" path="res://Assets/Characters/skeleton.png" id="2_skel"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1"]
+atlas = ExtResource("2_skel")
+region = Rect2(0, 0, 32, 32)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
 radius = 30.0
@@ -13,8 +17,8 @@ monitoring = true
 script = ExtResource("1_enemy")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("2_icon")
-scale = Vector2(0.5, 0.5)
+texture = SubResource("AtlasTexture_1")
+scale = Vector2(2, 2)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_enemy")

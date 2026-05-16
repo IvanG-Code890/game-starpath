@@ -9,6 +9,11 @@ var _pending_attacker: BaseEntity = null
 var _pending_skill: SkillData     = null
 var _pending_item: ItemData       = null
 
+# ── Recompensas de victoria (se leen desde BattleScene) ───────────────────
+var victory_xp:    int   = 0
+var victory_gold:  int   = 0
+var victory_items: Array = []   # Array[Dictionary] {name, effect, amount}
+
 # ── Referencias a los componentes de Lógica ────────────────────────────────
 @export var turn_queue: TurnQueue
 
@@ -92,19 +97,23 @@ func player_action_selected(action_name: String) -> void:
 	if current_state != BattleState.PLAYER_INPUT:
 		return
 
-	action_menu_toggled.emit(false)
-
 	var attacker = turn_queue.queue[turn_queue.active_index - 1]
+
+	if action_name == "Atacar":
+		# Entra en selección de objetivo igual que las habilidades
+		action_menu_toggled.emit(false)
+		_pending_attacker = attacker
+		_pending_skill    = null
+		_pending_item     = null
+		current_state     = BattleState.SELECTING_TARGET
+		target_selection_needed.emit(_get_alive_enemies())
+		return
+
+	action_menu_toggled.emit(false)
 	_log(attacker.stats.character_name + " usa " + action_name + "!")
 	await get_tree().create_timer(1.0).timeout
 
-	if action_name == "Atacar":
-		var defender = _get_first_enemy()
-		if defender:
-			var dmg: int = attacker.stats.attack + Inventory.get_attack_bonus() + Inventory.get_level_atk_bonus()
-			defender.take_damage(dmg)
-			_log("¡PUM! " + defender.stats.character_name + " recibe daño.")
-	elif action_name == "Curar":
+	if action_name == "Curar":
 		var success = attacker.heal_self()
 		if success:
 			_log(attacker.stats.character_name + " se cura y recupera HP.")
@@ -228,23 +237,21 @@ func _check_battle_end() -> bool:
 		battle_ended.emit(false) # false = el jugador no ganó
 		return true
 	elif not enemies_alive:
-		# ── Recompensa de XP ──────────────────────────────────────────────
-		var total_xp := 0
+		# ── Calcular recompensas (sin aplicarlas; BattleScene las anima) ──
+		victory_xp    = 0
+		victory_gold  = 0
+		victory_items = []
 		for entity in turn_queue.queue:
 			if entity.get_parent().is_in_group("Enemies") and not entity.is_alive:
 				var xp_val := entity.stats.xp_reward
 				if xp_val <= 0:
 					xp_val = entity.stats.max_hp / 2 + entity.stats.attack
-				total_xp += xp_val
+				victory_xp   += xp_val
+				victory_gold += entity.stats.gold_reward
 		_log("¡Victoria! Los enemigos han sido derrotados.")
-		if total_xp > 0:
-			var lvl_before := Inventory.current_level
-			Inventory.add_xp(total_xp)
-			_log("+ %d EXP  (Total: %d / %d)" % [total_xp, Inventory.current_xp, Inventory.xp_to_next()])
-			if Inventory.current_level > lvl_before:
-				_log("★ ¡NIVEL %d!  +10 HP  +5 MP  +2 ATK  +1 DEF  +1 VEL" % Inventory.current_level)
+		_log("+ %d EXP   + %d ✦" % [victory_xp, victory_gold])
 		current_state = BattleState.WON
-		battle_ended.emit(true) # true = el jugador ganó
+		battle_ended.emit(true)
 		return true
 		
 	return false # Si ambos equipos tienen vivos, el combate sigue

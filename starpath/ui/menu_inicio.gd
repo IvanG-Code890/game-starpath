@@ -11,7 +11,7 @@ extends Control
 # ── UI dinámica ───────────────────────────────────────────────────────────────
 var _music_pct:      Label
 var _sfx_pct:        Label
-var _load_panel:     Panel
+var _load_panel:     Control
 var _slot_list:      VBoxContainer
 var _confirm_overlay: Control
 var _font: Font
@@ -428,56 +428,113 @@ func _on_window_mode_selected(index: int) -> void:
 # ══════════════════════════════════════════════════════════════════════════════
 
 func _build_load_panel() -> void:
-	_load_panel = Panel.new()
-	_load_panel.anchor_left   = 0.5
-	_load_panel.anchor_top    = 0.5
-	_load_panel.anchor_right  = 0.5
-	_load_panel.anchor_bottom = 0.5
-	_load_panel.offset_left   = -300.0
-	_load_panel.offset_top    = -250.0
-	_load_panel.offset_right  =  300.0
-	_load_panel.offset_bottom =  250.0
+	# ── Overlay full-screen (bloquea el fondo) ─────────────────────────────
+	_load_panel = Control.new()
+	_load_panel.anchor_right  = 1.0
+	_load_panel.anchor_bottom = 1.0
 	_load_panel.visible = false
 	add_child(_load_panel)
 
+	var dim := ColorRect.new()
+	dim.anchor_right  = 1.0
+	dim.anchor_bottom = 1.0
+	dim.color = Color(0.0, 0.0, 0.0, 0.75)
+	_load_panel.add_child(dim)
+
+	# ── Panel centrado con el mismo estilo que el diálogo de confirmación ──
+	var panel := Panel.new()
+	panel.anchor_left   = 0.5
+	panel.anchor_top    = 0.5
+	panel.anchor_right  = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left   = -310.0
+	panel.offset_top    = -260.0
+	panel.offset_right  =  310.0
+	panel.offset_bottom =  260.0
+
+	var ps := StyleBoxFlat.new()
+	ps.bg_color                   = Color(0.07, 0.07, 0.13, 0.98)
+	ps.border_width_left          = 1
+	ps.border_width_right         = 1
+	ps.border_width_top           = 1
+	ps.border_width_bottom        = 1
+	ps.border_color               = Color(0.40, 0.40, 0.70, 0.65)
+	ps.corner_radius_top_left     = 14
+	ps.corner_radius_top_right    = 14
+	ps.corner_radius_bottom_right = 14
+	ps.corner_radius_bottom_left  = 14
+	ps.shadow_color               = Color(0, 0, 0, 0.55)
+	ps.shadow_size                = 18
+	ps.shadow_offset              = Vector2(0, 6)
+	panel.add_theme_stylebox_override("panel", ps)
+	_load_panel.add_child(panel)
+
+	# ── Contenido ──────────────────────────────────────────────────────────
 	var margin := MarginContainer.new()
 	margin.anchor_right  = 1.0
 	margin.anchor_bottom = 1.0
-	margin.add_theme_constant_override("margin_left",   20)
-	margin.add_theme_constant_override("margin_top",    16)
-	margin.add_theme_constant_override("margin_right",  20)
-	margin.add_theme_constant_override("margin_bottom", 16)
-	_load_panel.add_child(margin)
+	margin.add_theme_constant_override("margin_left",   28)
+	margin.add_theme_constant_override("margin_top",    24)
+	margin.add_theme_constant_override("margin_right",  28)
+	margin.add_theme_constant_override("margin_bottom", 24)
+	panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
 	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_theme_constant_override("separation", 10)
+	vbox.add_theme_constant_override("separation", 12)
 	margin.add_child(vbox)
 
+	# Título
 	var title := Label.new()
-	title.text                = "Cargar partida"
+	title.text                 = "Cargar partida"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if _font:
 		title.add_theme_font_override("font", _font)
 	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color",        Color(0.98, 0.88, 0.45))
+	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
+	title.add_theme_constant_override("shadow_offset_x", 2)
+	title.add_theme_constant_override("shadow_offset_y", 2)
 	vbox.add_child(title)
 
+	# Separador
+	var sep       := HSeparator.new()
+	var sep_style := StyleBoxFlat.new()
+	sep_style.bg_color = Color(0.40, 0.40, 0.70, 0.40)
+	sep.add_theme_stylebox_override("separator", sep_style)
+	vbox.add_child(sep)
+
+	# Lista de slots con scroll
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(scroll)
 
 	_slot_list = VBoxContainer.new()
 	_slot_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_slot_list.add_theme_constant_override("separation", 6)
+	_slot_list.add_theme_constant_override("separation", 8)
 	scroll.add_child(_slot_list)
 
+	# Separador inferior
+	var sep2       := HSeparator.new()
+	var sep2_style := StyleBoxFlat.new()
+	sep2_style.bg_color = Color(0.40, 0.40, 0.70, 0.40)
+	sep2.add_theme_stylebox_override("separator", sep2_style)
+	vbox.add_child(sep2)
+
+	# Botón volver
 	var back_btn := Button.new()
 	back_btn.text                = "Volver"
 	back_btn.custom_minimum_size = Vector2(0, 44)
 	if _font:
 		back_btn.add_theme_font_override("font", _font)
-	back_btn.add_theme_font_size_override("font_size", 22)
-	back_btn.add_theme_color_override("font_color", Color.BLACK)
+	back_btn.add_theme_font_size_override("font_size", 20)
+	back_btn.add_theme_stylebox_override("normal",  _make_rounded_style(Color(0.22, 0.22, 0.33)))
+	back_btn.add_theme_stylebox_override("hover",   _make_rounded_style(Color(0.30, 0.30, 0.46)))
+	back_btn.add_theme_stylebox_override("pressed", _make_rounded_style(Color(0.15, 0.15, 0.24)))
+	back_btn.add_theme_color_override("font_color",         Color.WHITE)
+	back_btn.add_theme_color_override("font_hover_color",   Color.WHITE)
+	back_btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+	back_btn.add_theme_color_override("font_focus_color",   Color.WHITE)
 	back_btn.pressed.connect(_on_load_back_pressed)
 	vbox.add_child(back_btn)
 
@@ -492,12 +549,18 @@ func _populate_load_slots() -> void:
 			continue
 		has_any = true
 		var btn := Button.new()
-		btn.text                = "Slot %d  —  Nv.%d  —  %s  —  %d oro" % [slot + 1, info.get("level", 1), info.get("save_date", "??"), info.get("gold", 0)]
-		btn.custom_minimum_size = Vector2(0, 40)
+		btn.text                = "Slot %d   Nv.%d   %s   %d ✦" % [slot + 1, info.get("level", 1), info.get("save_date", "??"), info.get("gold", 0)]
+		btn.custom_minimum_size = Vector2(0, 44)
 		if _font:
 			btn.add_theme_font_override("font", _font)
 		btn.add_theme_font_size_override("font_size", 16)
-		btn.add_theme_color_override("font_color", Color.BLACK)
+		btn.add_theme_stylebox_override("normal",  _make_rounded_style(Color(0.14, 0.28, 0.44)))
+		btn.add_theme_stylebox_override("hover",   _make_rounded_style(Color(0.20, 0.38, 0.58)))
+		btn.add_theme_stylebox_override("pressed", _make_rounded_style(Color(0.10, 0.20, 0.34)))
+		btn.add_theme_color_override("font_color",         Color(0.95, 0.95, 1.0))
+		btn.add_theme_color_override("font_hover_color",   Color.WHITE)
+		btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+		btn.add_theme_color_override("font_focus_color",   Color.WHITE)
 		btn.pressed.connect(_on_slot_selected.bind(slot))
 		_slot_list.add_child(btn)
 
@@ -508,6 +571,7 @@ func _populate_load_slots() -> void:
 		if _font:
 			lbl.add_theme_font_override("font", _font)
 		lbl.add_theme_font_size_override("font_size", 18)
+		lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.70))
 		_slot_list.add_child(lbl)
 
 func _on_slot_selected(slot: int) -> void:
@@ -526,11 +590,13 @@ func _on_load_back_pressed() -> void:
 
 func _on_new_game_pressed() -> void:
 	main_buttons.visible     = false
+	_confirm_overlay.move_to_front()
 	_confirm_overlay.visible = true
 
 func _on_load_game_pressed() -> void:
 	main_buttons.visible = false
 	_populate_load_slots()
+	_load_panel.move_to_front()
 	_load_panel.visible  = true
 
 func _on_options_pressed() -> void:

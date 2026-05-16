@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://bx05up8yryrmi"]
 
-[ext_resource type="Texture2D" uid="uid://cmx5171wqwg6h" path="res://icon.svg" id="1_3y3mh"]
 [ext_resource type="Script" uid="uid://bof5wpydm7fdd" path="res://Scripts/Battle/CombatantSprite.gd" id="1_uysmh"]
 [ext_resource type="Script" uid="uid://b2nb2ij58wmxg" path="res://Scripts/Battle/BaseEntity.gd" id="3_a3f3h"]
 [ext_resource type="Resource" uid="uid://chero2000001" path="res://Resources/Characters/Hero2.tres" id="4_hero2"]
+[ext_resource type="Texture2D" path="res://Assets/Characters/lyra.png" id="5_lyra"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_click"]
 size = Vector2(128, 128)
@@ -11,28 +11,29 @@ size = Vector2(128, 128)
 [node name="Hero2Sprite" type="Node2D" unique_id=320145700 node_paths=PackedStringArray("entity_logic") groups=["Heroes"]]
 script = ExtResource("1_uysmh")
 entity_logic = NodePath("Logic")
+sprite_texture = ExtResource("5_lyra")
+facing_left = false
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=320145702]
-position = Vector2(564, 231)
-texture = ExtResource("1_3y3mh")
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=320145702]
+position = Vector2(0, 0)
+scale = Vector2(4, 4)
 
 [node name="ProgressBar" type="ProgressBar" parent="." unique_id=320145703]
 visible = false
-offset_left = 562.0
-offset_top = 119.0
-offset_right = 566.0
-offset_bottom = 146.0
+offset_left = -64.0
+offset_top = -90.0
+offset_right = 64.0
+offset_bottom = -78.0
 
 [node name="ManaBar" type="ProgressBar" parent="." unique_id=320145704]
 visible = false
 modulate = Color(0.2, 0.6, 1, 1)
-offset_left = 562.0
-offset_top = 149.0
-offset_right = 566.0
-offset_bottom = 176.0
+offset_left = -64.0
+offset_top = -76.0
+offset_right = 64.0
+offset_bottom = -64.0
 
 [node name="ClickArea" type="Area2D" parent="." unique_id=320145782]
-position = Vector2(564, 231)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea" unique_id=320145783]
 shape = SubResource("RectangleShape2D_click")

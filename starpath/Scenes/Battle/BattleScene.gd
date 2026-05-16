@@ -1,6 +1,6 @@
 extends Node2D
 
-@onready var battle_manager = $BattleManager
+@onready var battle_manager: BattleManager = $BattleManager
 @onready var hero_logic     = $HeroSprite/Logic
 @onready var enemy_logic    = $EnemySprite/Logic
 @onready var enemy2_logic   = $Enemy2Sprite/Logic
@@ -59,6 +59,37 @@ func _ready() -> void:
 
 	battle_hud.setup(team_heroes)
 	battle_manager.start_battle(team_heroes, team_enemies)
+
+# ── Hover visual en selección de objetivo ────────────────────────────────────
+
+func _process(_delta: float) -> void:
+	if battle_manager == null:
+		return
+	var selecting := battle_manager.current_state == BattleManager.BattleState.SELECTING_TARGET
+	var mouse     := get_global_mouse_position()
+	var half      := Vector2(72, 72)
+
+	for entity: BaseEntity in [enemy_logic, enemy2_logic, hero_logic]:
+		var s := entity.get_parent() as CombatantSprite
+		if s == null:
+			continue
+		if not selecting or not s.is_selectable:
+			# Fuera de selección: asegurarse de que no quede highlight residual
+			if s._is_hovered:
+				s._is_hovered = false
+				if entity.is_alive:
+					s.sprite.modulate = Color(1.0, 1.0, 1.0)
+			continue
+		var over := Rect2(s.global_position - half, half * 2).has_point(mouse)
+		if over == s._is_hovered:
+			continue
+		s._is_hovered = over
+		if over:
+			s.sprite.modulate = Color(1.6, 1.5, 0.6)   # Brillo dorado
+			s.sprite.scale    = Vector2(4.3, 4.3)       # Escala ligeramente mayor
+		else:
+			s.sprite.modulate = Color(1.0, 1.0, 1.0)
+			s.sprite.scale    = Vector2(4.0, 4.0)
 
 # ── Seguimiento del héroe activo ──────────────────────────────────────────────
 
@@ -122,11 +153,18 @@ func _on_target_selection_needed(enemies: Array[BaseEntity]) -> void:
 		cancel_btn.visible = false
 		return
 
+	var mouse_world := get_global_mouse_position()
+	var half        := Vector2(72, 72)
+
 	for entity: BaseEntity in enemies:
 		var s := entity.get_parent() as CombatantSprite
 		if s:
 			s.is_selectable = true
 			s.clicked.connect(_on_enemy_sprite_clicked)
+			# Si el ratón ya está encima, marcar hover ahora mismo
+			if Rect2(s.global_position - half, half * 2).has_point(mouse_world):
+				s._is_hovered = true
+				s.sprite.modulate = Color(1.5, 1.4, 0.7)
 
 	cancel_btn.visible = true
 
@@ -142,11 +180,17 @@ func _on_ally_target_selection_needed(allies: Array[BaseEntity]) -> void:
 		cancel_btn.visible = false
 		return
 
+	var mouse_world_a := get_global_mouse_position()
+	var half_a        := Vector2(72, 72)
+
 	for entity: BaseEntity in allies:
 		var s := entity.get_parent() as CombatantSprite
 		if s:
 			s.is_selectable = true
 			s.clicked.connect(_on_ally_sprite_clicked)
+			if Rect2(s.global_position - half_a, half_a * 2).has_point(mouse_world_a):
+				s._is_hovered = true
+				s.sprite.modulate = Color(1.5, 1.4, 0.7)
 
 	cancel_btn.visible = true
 
@@ -155,6 +199,35 @@ func _on_ally_sprite_clicked(entity: BaseEntity) -> void:
 
 func _on_enemy_sprite_clicked(entity: BaseEntity) -> void:
 	battle_manager.player_target_confirmed(entity)
+
+# ── Detección de clic (_input se llama siempre, antes que la GUI) ─────────────
+
+func _input(event: InputEvent) -> void:
+	if battle_manager.current_state != BattleManager.BattleState.SELECTING_TARGET:
+		return
+	if not (event is InputEventMouseButton
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT
+			and (event as InputEventMouseButton).pressed):
+		return
+
+	# Prioridad 1: entidad que tiene el ratón encima (mouse_entered funciona)
+	for entity: BaseEntity in [enemy_logic, enemy2_logic, hero_logic]:
+		var s := entity.get_parent() as CombatantSprite
+		if s and s.is_selectable and s._is_hovered:
+			get_viewport().set_input_as_handled()
+			battle_manager.player_target_confirmed(entity)
+			return
+
+	# Prioridad 2: test geométrico con coordenadas de mundo
+	var mouse := get_global_mouse_position()
+	var half  := Vector2(72, 72)
+	for entity: BaseEntity in [enemy_logic, enemy2_logic, hero_logic]:
+		var s := entity.get_parent() as CombatantSprite
+		if s and s.is_selectable:
+			if Rect2(s.global_position - half, half * 2).has_point(mouse):
+				get_viewport().set_input_as_handled()
+				battle_manager.player_target_confirmed(entity)
+				return
 
 # ── Botones del menú ──────────────────────────────────────────────────────────
 
@@ -218,10 +291,9 @@ func _on_battle_ended(player_won: bool) -> void:
 	menu_combate.visible = false
 
 	if player_won:
-		end_panel.visible    = true
-		result_label.text = "¡VICTORIA!"
-		replay_btn.text   = "Volver al mapa"
 		AudioManager.play_bgm("victory", false)
+		await get_tree().create_timer(0.8).timeout
+		_show_victory_screen()
 	else:
 		# Pantalla de Game Over completa
 		AudioManager.stop_bgm()
@@ -233,3 +305,170 @@ func _on_battle_ended(player_won: bool) -> void:
 func _on_btn_reiniciar_pressed() -> void:
 	SceneTransition.go_to("res://Scenes/World/WorldMap.tscn")
 
+# ── Pantalla de victoria animada ──────────────────────────────────────────────
+
+func _show_victory_screen() -> void:
+	var xp_reward   := battle_manager.victory_xp
+	var gold_reward := battle_manager.victory_gold
+
+	# Estado antes de aplicar las recompensas
+	var xp_before     := Inventory.current_xp
+	var level_before  := Inventory.current_level
+	var xp_cap_before := Inventory.xp_to_next()
+
+	# Aplicar recompensas al Inventario
+	Inventory.add_xp(xp_reward)
+	Inventory.gold += gold_reward
+
+	var level_after  := Inventory.current_level
+	var xp_after     := Inventory.current_xp
+	var xp_cap_after := Inventory.xp_to_next()
+	var leveled_up   := level_after > level_before
+
+	# ── Overlay oscuro ────────────────────────────────────────────────────────
+	var ui := CanvasLayer.new()
+	ui.layer = 50
+	add_child(ui)
+
+	var dimmer := ColorRect.new()
+	dimmer.color = Color(0.0, 0.0, 0.0, 0.0)
+	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ui.add_child(dimmer)
+
+	var tw_dim := create_tween()
+	tw_dim.tween_property(dimmer, "color:a", 0.65, 0.35)
+	await tw_dim.finished
+
+	# ── Panel central ─────────────────────────────────────────────────────────
+	var vp_size := get_viewport().get_visible_rect().size
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(520, 0)
+	panel.position = Vector2(vp_size.x * 0.5 - 260, vp_size.y * 0.5 - 190)
+	ui.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	var inner := MarginContainer.new()
+	inner.add_theme_constant_override("margin_left",   24)
+	inner.add_theme_constant_override("margin_right",  24)
+	inner.add_theme_constant_override("margin_top",    18)
+	inner.add_theme_constant_override("margin_bottom", 18)
+	vbox.add_child(inner)
+
+	var inner_vbox := VBoxContainer.new()
+	inner_vbox.add_theme_constant_override("separation", 10)
+	inner.add_child(inner_vbox)
+
+	# Título
+	var lbl_title := Label.new()
+	lbl_title.text = "★  ¡VICTORIA!  ★"
+	lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_title.add_theme_font_size_override("font_size", 30)
+	lbl_title.modulate = Color(1.0, 0.92, 0.3)
+	inner_vbox.add_child(lbl_title)
+
+	inner_vbox.add_child(HSeparator.new())
+
+	# Fila EXP ganada
+	var lbl_xp_earned := Label.new()
+	lbl_xp_earned.text = "Experiencia:   + %d EXP" % xp_reward
+	lbl_xp_earned.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_xp_earned.add_theme_font_size_override("font_size", 18)
+	inner_vbox.add_child(lbl_xp_earned)
+
+	# Fila Oro ganado
+	var lbl_gold := Label.new()
+	lbl_gold.text = "Oro obtenido:   + %d ✦" % gold_reward
+	lbl_gold.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_gold.add_theme_font_size_override("font_size", 18)
+	lbl_gold.modulate = Color(1.0, 0.85, 0.2)
+	inner_vbox.add_child(lbl_gold)
+
+	inner_vbox.add_child(HSeparator.new())
+
+	# Nombre del héroe + nivel
+	var lbl_hero := Label.new()
+	lbl_hero.text = "Lyra   —   Nv. %d" % level_before
+	lbl_hero.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_hero.add_theme_font_size_override("font_size", 16)
+	inner_vbox.add_child(lbl_hero)
+
+	# Barra de XP
+	var xp_bar := ProgressBar.new()
+	xp_bar.min_value = 0
+	xp_bar.max_value = xp_cap_before
+	xp_bar.value = xp_before
+	xp_bar.show_percentage = false
+	xp_bar.custom_minimum_size = Vector2(0, 24)
+	inner_vbox.add_child(xp_bar)
+
+	var lbl_xp_vals := Label.new()
+	lbl_xp_vals.text = "%d / %d XP" % [xp_before, xp_cap_before]
+	lbl_xp_vals.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inner_vbox.add_child(lbl_xp_vals)
+
+	# Label de subida de nivel (vacío hasta que ocurra)
+	var lbl_levelup := Label.new()
+	lbl_levelup.text = ""
+	lbl_levelup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_levelup.add_theme_font_size_override("font_size", 20)
+	lbl_levelup.modulate = Color(1.0, 0.9, 0.2)
+	inner_vbox.add_child(lbl_levelup)
+
+	# ── Animación de la barra de XP ───────────────────────────────────────────
+	await get_tree().create_timer(0.4).timeout
+
+	if leveled_up:
+		# Llenar hasta el máximo del nivel anterior
+		var tw1 := create_tween()
+		tw1.tween_property(xp_bar, "value", float(xp_cap_before), 0.7)
+		tw1.parallel().tween_method(
+			func(v: float): lbl_xp_vals.text = "%d / %d XP" % [int(v), xp_cap_before],
+			float(xp_before), float(xp_cap_before), 0.7)
+		await tw1.finished
+
+		await get_tree().create_timer(0.25).timeout
+		lbl_levelup.text = "★ ¡NIVEL %d! ★" % level_after
+		lbl_hero.text = "Lyra   —   Nv. %d" % level_after
+
+		# Reiniciar barra al nuevo umbral
+		xp_bar.max_value = xp_cap_after
+		xp_bar.value     = 0.0
+		await get_tree().create_timer(0.3).timeout
+
+		# Llenar hasta el XP residual
+		var tw2 := create_tween()
+		tw2.tween_property(xp_bar, "value", float(xp_after), 0.7)
+		tw2.parallel().tween_method(
+			func(v: float): lbl_xp_vals.text = "%d / %d XP" % [int(v), xp_cap_after],
+			0.0, float(xp_after), 0.7)
+		await tw2.finished
+	else:
+		var tw := create_tween()
+		tw.tween_property(xp_bar, "value", float(xp_after), 1.0)
+		tw.parallel().tween_method(
+			func(v: float): lbl_xp_vals.text = "%d / %d XP" % [int(v), xp_cap_after],
+			float(xp_before), float(xp_after), 1.0)
+		await tw.finished
+
+	lbl_xp_vals.text = "%d / %d XP" % [xp_after, xp_cap_after]
+
+	# ── Botón de regreso ──────────────────────────────────────────────────────
+	inner_vbox.add_child(HSeparator.new())
+
+	var btn_hbox := HBoxContainer.new()
+	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	inner_vbox.add_child(btn_hbox)
+
+	var btn_map := Button.new()
+	btn_map.text = "Volver al mapa"
+	btn_map.custom_minimum_size = Vector2(220, 40)
+	btn_hbox.add_child(btn_map)
+
+	btn_map.pressed.connect(func():
+		SceneTransition.go_to("res://Scenes/World/WorldMap.tscn")
+	)

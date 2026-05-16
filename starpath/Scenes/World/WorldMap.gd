@@ -14,12 +14,17 @@ func _ready() -> void:
 	if Inventory.returning_from_battle:
 		Inventory.returning_from_battle = false
 		call_deferred("_restore_pre_battle_state")
+	elif SaveManager.has_pending_spawn:
+		call_deferred("_restore_saved_position")
 	else:
 		call_deferred("_trigger_lore_tutorial")
 
 func _restore_pre_battle_state() -> void:
 	player.global_position = Inventory.pre_battle_position
 	player._last_dir       = Inventory.pre_battle_direction
+
+func _restore_saved_position() -> void:
+	SaveManager.apply_pending_spawn(player)
 
 func _trigger_lore_tutorial() -> void:
 	TutorialManager.try_show(

@@ -7,6 +7,11 @@ const SLOT_COUNT := 20
 
 var has_unsaved_changes: bool = true
 
+# Posición pendiente a aplicar cuando el WorldMap termine de cargar
+var _pending_pos: Vector2 = Vector2.ZERO
+var _pending_dir: String  = ""
+var has_pending_spawn: bool = false
+
 func _ready() -> void:
 	Inventory.changed.connect(func(): has_unsaved_changes = true)
 
@@ -97,13 +102,22 @@ func load_game(slot: int) -> bool:
 	Inventory.init_stats()
 	Inventory.changed.emit()
 
-	var player := _find_player()
-	if player and data.has("pos_x"):
-		player.global_position = Vector2(float(data["pos_x"]), float(data["pos_y"]))
-		player._last_dir = data.get("dir", "down")
+	# Guardar posición pendiente; WorldMap la aplicará en _ready()
+	if data.has("pos_x"):
+		_pending_pos      = Vector2(float(data["pos_x"]), float(data["pos_y"]))
+		_pending_dir      = data.get("dir", "down")
+		has_pending_spawn = true
 
 	game_loaded.emit(slot)
 	return true
+
+## Llamar desde WorldMap._ready() para colocar al jugador en la posición guardada.
+func apply_pending_spawn(player: PlayerController) -> void:
+	if not has_pending_spawn:
+		return
+	player.global_position = _pending_pos
+	player._last_dir       = _pending_dir
+	has_pending_spawn      = false
 
 func _find_player() -> PlayerController:
 	var nodes := get_tree().get_nodes_in_group("player")

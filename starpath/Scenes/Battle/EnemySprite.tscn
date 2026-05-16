@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://bof5wpydm7fdd" path="res://Scripts/Battle/CombatantSprite.gd" id="1_nxq3l"]
 [ext_resource type="Script" uid="uid://b2nb2ij58wmxg" path="res://Scripts/Battle/BaseEntity.gd" id="2_meaxh"]
-[ext_resource type="Texture2D" uid="uid://cmx5171wqwg6h" path="res://icon.svg" id="2_pdsmn"]
 [ext_resource type="Resource" uid="uid://1ua12cojo4kw" path="res://Resources/Enemies/Limo.tres" id="4_pdsmn"]
+[ext_resource type="Texture2D" path="res://Assets/Characters/skeleton.png" id="5_skel"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_click"]
 size = Vector2(128, 128)
@@ -11,29 +11,29 @@ size = Vector2(128, 128)
 [node name="EnemySprite" type="Node2D" unique_id=1135229011 node_paths=PackedStringArray("entity_logic") groups=["Enemies"]]
 script = ExtResource("1_nxq3l")
 entity_logic = NodePath("Logic")
+sprite_texture = ExtResource("5_skel")
+facing_left = true
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=211004938]
-modulate = Color(1, 0.101960786, 0.10980392, 1)
-position = Vector2(529, 296)
-texture = ExtResource("2_pdsmn")
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=211004938]
+position = Vector2(0, 0)
+scale = Vector2(4, 4)
 
 [node name="ProgressBar" type="ProgressBar" parent="." unique_id=701492247]
 visible = false
-offset_left = 527.0
-offset_top = 174.0
-offset_right = 531.0
-offset_bottom = 201.0
+offset_left = -64.0
+offset_top = -90.0
+offset_right = 64.0
+offset_bottom = -78.0
 
 [node name="ManaBar" type="ProgressBar" parent="." unique_id=320145679]
 visible = false
 modulate = Color(0.2, 0.6, 1, 1)
-offset_left = 527.0
-offset_top = 204.0
-offset_right = 531.0
-offset_bottom = 231.0
+offset_left = -64.0
+offset_top = -76.0
+offset_right = 64.0
+offset_bottom = -64.0
 
 [node name="ClickArea" type="Area2D" parent="." unique_id=320145750]
-position = Vector2(529, 296)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea" unique_id=320145751]
 shape = SubResource("RectangleShape2D_click")
