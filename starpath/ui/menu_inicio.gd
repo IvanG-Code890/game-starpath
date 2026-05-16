@@ -32,10 +32,67 @@ func _ready() -> void:
 	_build_confirm_dialog()
 
 	# Mejoras visuales / UX
+	_add_particles()
 	_add_subtitle()
 	_style_exit_button()
 	_maybe_add_continue_button()
 	_add_social_bar()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PARTÍCULAS DE AMBIENTE
+# ══════════════════════════════════════════════════════════════════════════════
+
+func _add_particles() -> void:
+	var vp := get_viewport_rect().size
+
+	# ── Capa 1: brasas doradas (rápidas, pequeñas) ────────────────────────
+	var embers := CPUParticles2D.new()
+	embers.position             = Vector2(vp.x * 0.5, vp.y + 30)
+	embers.emitting             = true
+	embers.amount               = 55
+	embers.lifetime             = 9.0
+	embers.randomness           = 1.0
+	embers.emission_shape       = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(vp.x * 0.52, 20)
+	embers.direction            = Vector2(0.0, -1.0)
+	embers.spread               = 18.0
+	embers.gravity              = Vector2(0.0, 0.0)
+	embers.initial_velocity_min = 22.0
+	embers.initial_velocity_max = 58.0
+	embers.angular_velocity_min = -30.0
+	embers.angular_velocity_max = 30.0
+	embers.scale_amount_min     = 1.2
+	embers.scale_amount_max     = 3.2
+
+	var ramp1 := Gradient.new()
+	ramp1.set_color(0, Color(1.00, 0.72, 0.18, 1.00))
+	ramp1.set_color(1, Color(1.00, 0.35, 0.05, 0.00))
+	embers.color_ramp = ramp1
+	add_child(embers)
+
+	# ── Capa 2: polvo luminoso (lento, grande, difuso) ────────────────────
+	var dust := CPUParticles2D.new()
+	dust.position               = Vector2(vp.x * 0.5, vp.y + 20)
+	dust.emitting               = true
+	dust.amount                 = 30
+	dust.lifetime               = 14.0
+	dust.randomness             = 1.0
+	dust.emission_shape         = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	dust.emission_rect_extents  = Vector2(vp.x * 0.52, 15)
+	dust.direction              = Vector2(0.0, -1.0)
+	dust.spread                 = 40.0
+	dust.gravity                = Vector2(0.0, 0.0)
+	dust.initial_velocity_min   = 6.0
+	dust.initial_velocity_max   = 18.0
+	dust.scale_amount_min       = 3.0
+	dust.scale_amount_max       = 7.0
+
+	var ramp2 := Gradient.new()
+	ramp2.set_color(0, Color(0.96, 0.86, 0.52, 0.50))
+	ramp2.set_color(1, Color(0.80, 0.62, 0.28, 0.00))
+	dust.color_ramp = ramp2
+	add_child(dust)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -279,6 +336,7 @@ func _start_new_game() -> void:
 	Inventory.items.clear()
 	Inventory.equipped_weapon  = null
 	Inventory.equipped_armor   = null
+	Inventory.init_stats()
 	SaveManager.has_unsaved_changes = true
 	get_tree().change_scene_to_file(WORLD_MAP_SCENE)
 

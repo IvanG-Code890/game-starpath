@@ -2,12 +2,24 @@ extends Node
 
 signal changed
 
+const HERO_STATS_PATH := "res://Resources/Characters/Hero.tres"
+
 var items:            Array[ItemData] = []
 var gold:             int             = 150
 var equipped_weapon:  ItemData        = null
 var equipped_armor:   ItemData        = null
 
+var current_hp: int = 0
+var current_mp: int = 0
+
+func init_stats() -> void:
+	var stats: CharacterStats = load(HERO_STATS_PATH)
+	if stats:
+		current_hp = stats.max_hp
+		current_mp = stats.max_mp
+
 func _ready() -> void:
+	init_stats()
 	var pocion := ItemData.new()
 	pocion.item_name   = "Poción"
 	pocion.item_type   = ItemData.ItemType.CONSUMABLE

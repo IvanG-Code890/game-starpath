@@ -1,4 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path fill="white" d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/>
-  <path fill="white" d="M12 4c-.343 0-.682.023-1.017.065C12.224 5.6 13.108 8.461 13.2 11h4.78A8.017 8.017 0 0 0 12 4zm-1.2 7c.096-2.7 1.058-5.35 2.373-6.76A8.003 8.003 0 0 0 4.02 11H10.8zm-6.78 2a8.003 8.003 0 0 0 7.153 6.76C9.858 18.35 8.896 15.7 8.8 13H5.02zM12 20a8.017 8.017 0 0 0 5.98-2.935H13.2c-.092 2.539-.976 5.4-2.217 6.935C11.318 20.977 11.659 21 12 21v-1zm1.2-7c-.096 2.7-1.058 5.35-2.373 6.76A8.003 8.003 0 0 0 19.98 13H13.2z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Círculo exterior -->
+  <circle cx="12" cy="12" r="9.5" stroke="white" stroke-width="1.5" fill="none"/>
+  <!-- Ecuador horizontal -->
+  <line x1="2.5" y1="12" x2="21.5" y2="12" stroke="white" stroke-width="1.5"/>
+  <!-- Meridiano vertical -->
+  <line x1="12" y1="2.5" x2="12" y2="21.5" stroke="white" stroke-width="1.5"/>
+  <!-- Elipse izquierda (meridianos laterales) -->
+  <ellipse cx="12" cy="12" rx="4.2" ry="9.5" stroke="white" stroke-width="1.5" fill="none"/>
+  <!-- Paralelo superior -->
+  <path d="M4.5 8 Q12 6.2 19.5 8" stroke="white" stroke-width="1.2" fill="none"/>
+  <!-- Paralelo inferior -->
+  <path d="M4.5 16 Q12 17.8 19.5 16" stroke="white" stroke-width="1.2" fill="none"/>
 </svg>

@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://Scenes/World/NPC.tscn" id="6_k2sq4"]
 [ext_resource type="Texture2D" uid="uid://dtl2yoa31urxi" path="res://Assets/Characters/npc1.png" id="7_e6b1v"]
 [ext_resource type="Script" uid="uid://c0kpbje5kprwf" path="res://Scripts/World/BridgeArea.gd" id="99_bridge"]
+[ext_resource type="Script" path="res://Scripts/UI/HUD.gd" id="99_hud"]
+[ext_resource type="Script" path="res://Scripts/UI/Minimap.gd" id="99_minimap"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_left"]
 size = Vector2(20, 1940)
@@ -56,6 +58,13 @@ shape = SubResource("RectangleShape2D_bottom")
 
 [node name="Enemy" parent="NPCs" unique_id=540909280 instance=ExtResource("6_enemy")]
 position = Vector2(514, 120)
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=100000001]
+script = ExtResource("99_hud")
+
+[node name="Minimap" type="CanvasLayer" parent="." unique_id=100000002]
+layer = 2
+script = ExtResource("99_minimap")
 
 [node name="PauseMenu" parent="." unique_id=534843101 instance=ExtResource("4_pm")]
 

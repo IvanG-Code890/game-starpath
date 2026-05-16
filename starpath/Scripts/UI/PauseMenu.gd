@@ -6,16 +6,24 @@ const HERO_PATHS: Array[String] = [
 ]
 var _equip_hero_index: int = 0
 
-# Colores del tema
-const C_BG        := Color(0.04, 0.04, 0.10, 0.82)   # azul noche semitransparente
-const C_PANEL     := Color(0.08, 0.08, 0.18, 0.96)   # panel oscuro
-const C_BORDER    := Color(0.45, 0.70, 1.00, 1.00)   # azul acero
-const C_TITLE     := Color(0.80, 0.92, 1.00, 1.00)   # blanco azulado
-const C_TEXT      := Color(0.85, 0.90, 0.95, 1.00)   # texto claro
-const C_MUTED     := Color(0.55, 0.65, 0.75, 1.00)   # texto secundario
-const C_BTN_NORM  := Color(0.14, 0.20, 0.38, 1.00)   # botón normal
-const C_BTN_HOV   := Color(0.20, 0.35, 0.60, 1.00)   # botón hover
-const C_ACCENT    := Color(0.40, 0.80, 1.00, 1.00)   # acento
+const FONT_PATH := "res://Assets/Fonts/CinzelDecorative-Bold.ttf"
+var _font: Font
+
+# Paleta fantasía oscura / dorada
+const C_BG        := Color(0.02, 0.01, 0.04, 0.90)   # negro noche
+const C_PANEL     := Color(0.07, 0.06, 0.11, 0.98)   # panel oscuro cálido
+const C_BORDER    := Color(0.72, 0.57, 0.20, 1.00)   # oro antiguo
+const C_BORDER2   := Color(0.45, 0.35, 0.10, 1.00)   # oro oscuro
+const C_TITLE     := Color(0.96, 0.84, 0.40, 1.00)   # oro brillante
+const C_TEXT      := Color(0.92, 0.88, 0.80, 1.00)   # blanco cálido
+const C_MUTED     := Color(0.60, 0.56, 0.48, 1.00)   # gris cálido
+const C_BTN_NORM  := Color(0.09, 0.08, 0.13, 0.96)   # botón oscuro
+const C_BTN_HOV   := Color(0.18, 0.14, 0.06, 0.98)   # hover dorado oscuro
+const C_ACCENT    := Color(0.96, 0.84, 0.40, 1.00)   # oro acento
+const C_HP        := Color(0.88, 0.28, 0.28, 1.00)   # rojo vida
+const C_MP        := Color(0.35, 0.60, 1.00, 1.00)   # azul maná
+
+const MAIN_MENU_SCENE := "res://Scenes/UI/menu_inicio.tscn"
 
 var _main_panel:    Control
 var _items_panel:   Control
@@ -28,9 +36,16 @@ var _slot_mode:    String = "save"
 var _feedback_lbl:      Label
 var _slot_feedback_lbl: Label
 
+# Confirm panel — acción pendiente
+var _pending_action:     Callable
+var _confirm_title_lbl:  Label
+var _btn_save_act:       Button
+var _btn_nosave_act:     Button
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
+	_font = load(FONT_PATH)
 	_build_ui()
 
 # ── Abrir / Cerrar / Toggle ────────────────────────────────────────────────────
@@ -96,7 +111,7 @@ func _build_ui() -> void:
 # ── Panel principal ────────────────────────────────────────────────────────────
 
 func _build_main_panel() -> Control:
-	var root := _make_centered_root(520, 520)
+	var root := _make_centered_root(560, 560)
 
 	var panel := root.get_child(0) as PanelContainer
 	_style_panel(panel, C_PANEL, C_BORDER)
@@ -104,85 +119,123 @@ func _build_main_panel() -> Control:
 	var margin := panel.get_child(0) as MarginContainer
 
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 20)
+	hbox.add_theme_constant_override("separation", 22)
 	margin.add_child(hbox)
 
-	# ── Columna izquierda: stats ──
+	# ── Columna izquierda: stats del personaje ────────────────────────────
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(200, 0)
-	left.add_theme_constant_override("separation", 5)
+	left.custom_minimum_size = Vector2(185, 0)
+	left.add_theme_constant_override("separation", 6)
 	hbox.add_child(left)
 
-	_lbl_colored(left, "★  LYRA", 15, C_ACCENT)
+	# Nombre con fuente RPG
+	var name_lbl := Label.new()
+	name_lbl.text = "✦  LYRA"
+	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.add_theme_color_override("font_color", C_ACCENT)
+	name_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
+	name_lbl.add_theme_constant_override("shadow_offset_x", 2)
+	name_lbl.add_theme_constant_override("shadow_offset_y", 2)
+	if _font:
+		name_lbl.add_theme_font_override("font", _font)
+	left.add_child(name_lbl)
+
 	_lbl_colored(left, "Maga", 12, C_MUTED)
-	left.add_child(_separator_h(C_BORDER, 1))
-	left.add_child(_spacer(4))
+	left.add_child(_separator_h(C_BORDER2, 1))
+	left.add_child(_spacer(2))
 
-	# Stats con placeholders; se rellenan en _refresh_stats()
-	for tag in ["_hp", "_mp", "_atk", "_def", "_vel"]:
-		var lbl := Label.new()
-		lbl.name = tag.substr(1).to_upper()   # "HP", "MP", etc.
-		lbl.add_theme_font_size_override("font_size", 13)
-		lbl.add_theme_color_override("font_color", C_TEXT)
-		left.add_child(lbl)
+	# Stats con colores diferenciados
+	for pair in [["HP", C_HP], ["MP", C_MP], ["ATK", C_TEXT], ["DEF", C_TEXT], ["VEL", C_TEXT]]:
+		var row := HBoxContainer.new()
+		var tag_lbl := Label.new()
+		tag_lbl.custom_minimum_size = Vector2(36, 0)
+		tag_lbl.add_theme_font_size_override("font_size", 12)
+		tag_lbl.add_theme_color_override("font_color", pair[1] as Color)
+		tag_lbl.text = pair[0] as String
+		if _font:
+			tag_lbl.add_theme_font_override("font", _font)
+		row.add_child(tag_lbl)
+		var val_lbl := Label.new()
+		val_lbl.name = pair[0] as String
+		val_lbl.add_theme_font_size_override("font_size", 13)
+		val_lbl.add_theme_color_override("font_color", C_TEXT)
+		row.add_child(val_lbl)
+		left.add_child(row)
 
-	left.add_child(_spacer(4))
-	left.add_child(_separator_h(C_BORDER, 1))
+	left.add_child(_spacer(6))
+	left.add_child(_separator_h(C_BORDER2, 1))
 	left.add_child(_spacer(2))
 
 	var gold_lbl := Label.new()
 	gold_lbl.name = "GoldLbl"
 	gold_lbl.add_theme_font_size_override("font_size", 13)
 	gold_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.30))
+	if _font:
+		gold_lbl.add_theme_font_override("font", _font)
 	left.add_child(gold_lbl)
 
-	# ── Separador vertical ──
-	hbox.add_child(_separator_v(C_BORDER))
+	# ── Separador vertical ────────────────────────────────────────────────
+	hbox.add_child(_separator_v(C_BORDER2))
 
-	# ── Columna derecha: opciones ──
+	# ── Columna derecha: botones ──────────────────────────────────────────
 	var right := VBoxContainer.new()
-	right.add_theme_constant_override("separation", 10)
+	right.add_theme_constant_override("separation", 8)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(right)
 
-	_lbl_colored(right, "MENÚ", 16, C_TITLE)
-	right.add_child(_separator_h(C_BORDER, 1))
-	right.add_child(_spacer(6))
-
-	var btn_equip := _make_button("⚔  Equipamiento", 170, 38)
-	btn_equip.pressed.connect(_show_equip)
-	right.add_child(btn_equip)
-
-	var btn_items := _make_button("⚗  Objetos", 170, 38)
-	btn_items.pressed.connect(_show_items)
-	right.add_child(btn_items)
-
-	var btn_opts := _make_button("⚙  Opciones", 170, 38)
-	btn_opts.pressed.connect(_show_options)
-	right.add_child(btn_opts)
-
-	right.add_child(_separator_h(C_BORDER, 1))
-	right.add_child(_spacer(2))
-
-	var btn_save := _make_button("💾  Guardar partida", 170, 38)
-	btn_save.pressed.connect(func(): _show_slots("save"))
-	right.add_child(btn_save)
-
-	var btn_load := _make_button("📂  Cargar partida", 170, 38)
-	btn_load.pressed.connect(func(): _show_slots("load"))
-	right.add_child(btn_load)
-
-	right.add_child(_spacer(2))
+	# Título con fuente RPG
+	var menu_title := Label.new()
+	menu_title.text = "— MENÚ —"
+	menu_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	menu_title.add_theme_font_size_override("font_size", 17)
+	menu_title.add_theme_color_override("font_color", C_TITLE)
+	menu_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
+	menu_title.add_theme_constant_override("shadow_offset_x", 2)
+	menu_title.add_theme_constant_override("shadow_offset_y", 2)
+	if _font:
+		menu_title.add_theme_font_override("font", _font)
+	right.add_child(menu_title)
 	right.add_child(_separator_h(C_BORDER, 1))
 	right.add_child(_spacer(4))
 
-	var btn_quit := _make_button("⏻  Salir del juego", 170, 38)
+	var btn_equip := _make_button("⚔   Equipamiento", 200, 40)
+	btn_equip.pressed.connect(_show_equip)
+	right.add_child(btn_equip)
+
+	var btn_items := _make_button("⚗   Objetos", 200, 40)
+	btn_items.pressed.connect(_show_items)
+	right.add_child(btn_items)
+
+	var btn_opts := _make_button("⚙   Opciones", 200, 40)
+	btn_opts.pressed.connect(_show_options)
+	right.add_child(btn_opts)
+
+	right.add_child(_separator_h(C_BORDER2, 1))
+
+	var btn_save := _make_button("💾   Guardar partida", 200, 40)
+	btn_save.pressed.connect(func(): _show_slots("save"))
+	right.add_child(btn_save)
+
+	var btn_load := _make_button("📂   Cargar partida", 200, 40)
+	btn_load.pressed.connect(func(): _show_slots("load"))
+	right.add_child(btn_load)
+
+	var btn_main_menu := _make_button("⌂   Menú principal", 200, 40)
+	btn_main_menu.pressed.connect(_on_main_menu_pressed)
+	btn_main_menu.add_theme_color_override("font_color",       Color(0.60, 0.90, 1.00))
+	btn_main_menu.add_theme_color_override("font_hover_color", Color(0.85, 1.00, 1.00))
+	right.add_child(btn_main_menu)
+
+	right.add_child(_separator_h(C_BORDER2, 1))
+
+	var btn_quit := _make_button("⏻   Salir del juego", 200, 40)
 	btn_quit.pressed.connect(_on_quit_pressed)
-	btn_quit.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45))
+	btn_quit.add_theme_color_override("font_color",       Color(1.0, 0.40, 0.40))
+	btn_quit.add_theme_color_override("font_hover_color", Color(1.0, 0.65, 0.65))
 	right.add_child(btn_quit)
 
-	var btn_close := _make_button("✕  Cerrar  [Esc]", 170, 38)
+	var btn_close := _make_button("✕   Cerrar  [Esc]", 200, 40)
 	btn_close.pressed.connect(close)
 	right.add_child(btn_close)
 
@@ -274,20 +327,24 @@ func _refresh_stats() -> void:
 	var stats: CharacterStats = load(HERO_PATHS[0])
 	if stats == null:
 		return
-	var card := _main_panel.get_child(0).get_child(0).get_child(0).get_child(0) as VBoxContainer
 
 	var atk_bonus := Inventory.get_attack_bonus()
 	var def_bonus := Inventory.get_defense_bonus()
 
-	_set_lbl(card, "HP",  "HP   %d / %d" % [stats.max_hp, stats.max_hp])
-	_set_lbl(card, "MP",  "MP   %d / %d" % [stats.max_mp, stats.max_mp])
-	_set_lbl(card, "ATK", "ATK  %d%s" % [stats.attack, "  (+%d)" % atk_bonus if atk_bonus > 0 else ""])
-	_set_lbl(card, "DEF", "DEF  %d%s" % [stats.defense, "  (+%d)" % def_bonus if def_bonus > 0 else ""])
-	_set_lbl(card, "VEL", "VEL  %d"   % stats.speed)
+	_set_stat_lbl("HP",  "%d / %d" % [stats.max_hp, stats.max_hp])
+	_set_stat_lbl("MP",  "%d / %d" % [stats.max_mp, stats.max_mp])
+	_set_stat_lbl("ATK", "%d%s"    % [stats.attack,  "  (+%d)" % atk_bonus if atk_bonus > 0 else ""])
+	_set_stat_lbl("DEF", "%d%s"    % [stats.defense, "  (+%d)" % def_bonus if def_bonus > 0 else ""])
+	_set_stat_lbl("VEL", "%d"      % stats.speed)
 
 	var gold_lbl := _main_panel.find_child("GoldLbl", true, false) as Label
 	if gold_lbl:
 		gold_lbl.text = "✦  Oro:  %d" % Inventory.gold
+
+func _set_stat_lbl(stat_name: String, value: String) -> void:
+	var lbl := _main_panel.find_child(stat_name, true, false) as Label
+	if lbl:
+		lbl.text = value
 
 func _set_lbl(parent: Node, node_name: String, text: String) -> void:
 	var lbl := parent.get_node_or_null(node_name) as Label
@@ -334,9 +391,10 @@ func _style_panel(panel: PanelContainer, bg: Color, border: Color) -> void:
 	style.bg_color             = bg
 	style.border_color         = border
 	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
-	style.shadow_color         = Color(0, 0, 0, 0.5)
-	style.shadow_size          = 8
+	style.set_corner_radius_all(6)
+	style.shadow_color         = Color(0, 0, 0, 0.75)
+	style.shadow_size          = 20
+	style.shadow_offset        = Vector2(0, 6)
 	panel.add_theme_stylebox_override("panel", style)
 
 func _make_button(text: String, w: int, h: int) -> Button:
@@ -345,24 +403,38 @@ func _make_button(text: String, w: int, h: int) -> Button:
 	btn.custom_minimum_size = Vector2(w, h)
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 
+	# Normal: borde izquierdo dorado como acento RPG
 	var s_norm := StyleBoxFlat.new()
-	s_norm.bg_color = C_BTN_NORM
-	s_norm.set_corner_radius_all(5)
-	s_norm.set_border_width_all(1)
-	s_norm.border_color = C_BORDER
-	s_norm.content_margin_left = 10
+	s_norm.bg_color             = C_BTN_NORM
+	s_norm.set_corner_radius_all(4)
+	s_norm.border_width_left    = 3
+	s_norm.border_width_top     = 1
+	s_norm.border_width_right   = 1
+	s_norm.border_width_bottom  = 1
+	s_norm.border_color         = C_BORDER2
+	s_norm.content_margin_left  = 14
+	s_norm.shadow_color         = Color(0, 0, 0, 0.4)
+	s_norm.shadow_size          = 4
 
+	# Hover: borde izquierdo más grueso y brillante
 	var s_hov := StyleBoxFlat.new()
-	s_hov.bg_color = C_BTN_HOV
-	s_hov.set_corner_radius_all(5)
-	s_hov.set_border_width_all(1)
-	s_hov.border_color = C_ACCENT
-	s_hov.content_margin_left = 10
+	s_hov.bg_color              = C_BTN_HOV
+	s_hov.set_corner_radius_all(4)
+	s_hov.border_width_left     = 4
+	s_hov.border_width_top      = 1
+	s_hov.border_width_right    = 1
+	s_hov.border_width_bottom   = 1
+	s_hov.border_color          = C_BORDER
+	s_hov.content_margin_left   = 14
+	s_hov.shadow_color          = Color(0.72, 0.57, 0.20, 0.3)
+	s_hov.shadow_size           = 6
 
 	var s_press := StyleBoxFlat.new()
-	s_press.bg_color = C_BORDER
-	s_press.set_corner_radius_all(5)
-	s_press.content_margin_left = 10
+	s_press.bg_color            = C_BORDER2
+	s_press.set_corner_radius_all(4)
+	s_press.border_width_left   = 4
+	s_press.border_color        = C_BORDER
+	s_press.content_margin_left = 14
 
 	btn.add_theme_stylebox_override("normal",   s_norm)
 	btn.add_theme_stylebox_override("hover",    s_hov)
@@ -370,7 +442,10 @@ func _make_button(text: String, w: int, h: int) -> Button:
 	btn.add_theme_color_override("font_color",          C_TEXT)
 	btn.add_theme_color_override("font_hover_color",    C_TITLE)
 	btn.add_theme_color_override("font_pressed_color",  Color.WHITE)
+	btn.add_theme_color_override("font_focus_color",    C_TEXT)
 	btn.add_theme_font_size_override("font_size", 13)
+	if _font:
+		btn.add_theme_font_override("font", _font)
 
 	return btn
 
@@ -813,17 +888,40 @@ func _on_fullscreen_toggle() -> void:
 func _on_resolution_selected(idx: int) -> void:
 	SettingsManager.set_resolution(idx)
 
-# ── Salir del juego ───────────────────────────────────────────────────────────
+# ── Salir del juego / Menú principal ─────────────────────────────────────────
+
+func _request_confirm(title: String, save_label: String, nosave_label: String, action: Callable) -> void:
+	_pending_action = action
+	if _confirm_title_lbl:
+		_confirm_title_lbl.text = title
+	if _btn_save_act:
+		_btn_save_act.text    = save_label
+		_btn_save_act.visible = SaveManager.has_unsaved_changes
+	if _btn_nosave_act:
+		_btn_nosave_act.text = nosave_label
+	var warn := _confirm_panel.find_child("WarnLbl", true, false) as Label
+	if warn:
+		warn.visible = SaveManager.has_unsaved_changes
+	_confirm_panel.visible = true
 
 func _on_quit_pressed() -> void:
-	_confirm_panel.visible = true
-	var warn := _confirm_panel.find_child("WarnLbl", true, false) as Label
-	var btn_save_quit := _confirm_panel.find_child("BtnSaveQuit", true, false) as Button
-	var has_unsaved   := SaveManager.has_unsaved_changes
-	if warn:
-		warn.visible = has_unsaved
-	if btn_save_quit:
-		btn_save_quit.visible = has_unsaved
+	_request_confirm(
+		"¿Salir del juego?",
+		"💾  Guardar y salir",
+		"✕  Salir sin guardar",
+		func(): get_tree().quit()
+	)
+
+func _on_main_menu_pressed() -> void:
+	_request_confirm(
+		"¿Volver al menú principal?",
+		"💾  Guardar e ir",
+		"⌂  Ir sin guardar",
+		func():
+			AudioManager.stop_bgm()
+			get_tree().paused = false
+			get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+	)
 
 func _build_confirm_panel() -> Control:
 	var root := Control.new()
@@ -857,7 +955,11 @@ func _build_confirm_panel() -> Control:
 	vbox.add_theme_constant_override("separation", 12)
 	margin.add_child(vbox)
 
-	_lbl_colored(vbox, "¿Salir del juego?", 16, C_TITLE)
+	_confirm_title_lbl = Label.new()
+	_confirm_title_lbl.text = "¿Salir del juego?"
+	_confirm_title_lbl.add_theme_font_size_override("font_size", 16)
+	_confirm_title_lbl.add_theme_color_override("font_color", C_TITLE)
+	vbox.add_child(_confirm_title_lbl)
 	vbox.add_child(_separator_h(Color(1.0, 0.45, 0.45), 1))
 
 	var warn := Label.new()
@@ -868,26 +970,29 @@ func _build_confirm_panel() -> Control:
 	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(warn)
 
-	var btn_save_quit := _make_button("💾  Guardar y salir", 320, 38)
-	btn_save_quit.name = "BtnSaveQuit"
-	btn_save_quit.pressed.connect(_on_save_and_quit)
-	vbox.add_child(btn_save_quit)
+	_btn_save_act = _make_button("💾  Guardar y salir", 320, 38)
+	_btn_save_act.pressed.connect(func():
+		SaveManager.save_game(0)
+		root.visible = false
+		if _pending_action.is_valid():
+			_pending_action.call()
+	)
+	vbox.add_child(_btn_save_act)
 
-	var btn_quit := _make_button("✕  Salir sin guardar", 320, 38)
-	btn_quit.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45))
-	btn_quit.pressed.connect(func(): get_tree().quit())
-	vbox.add_child(btn_quit)
+	_btn_nosave_act = _make_button("✕  Salir sin guardar", 320, 38)
+	_btn_nosave_act.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45))
+	_btn_nosave_act.pressed.connect(func():
+		root.visible = false
+		if _pending_action.is_valid():
+			_pending_action.call()
+	)
+	vbox.add_child(_btn_nosave_act)
 
 	var btn_cancel := _make_button("←  Cancelar", 320, 38)
 	btn_cancel.pressed.connect(func(): root.visible = false)
 	vbox.add_child(btn_cancel)
 
 	return root
-
-func _on_save_and_quit() -> void:
-	# Guarda en la ranura 0 automáticamente y luego sale
-	SaveManager.save_game(0)
-	get_tree().quit()
 
 func _add_slot_row(parent: Node, label: String, item: ItemData, on_unequip: Callable) -> void:
 	var row := HBoxContainer.new()
