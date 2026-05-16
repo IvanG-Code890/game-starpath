@@ -20,11 +20,8 @@ var _mp_lbl:  Label
 var _stats:   CharacterStats
 
 func _ready() -> void:
-	_font  = load(FONT_PATH)
-	_stats = load(HERO_STATS_PATH)
-	_build_hud()
-	_refresh()
-	Inventory.changed.connect(_refresh)
+	# El HUD de mundo fue reemplazado por el panel de grupo en el menú de pausa.
+	visible = false
 
 # ── Construcción ──────────────────────────────────────────────────────────────
 

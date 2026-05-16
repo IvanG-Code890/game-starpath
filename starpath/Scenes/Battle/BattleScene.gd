@@ -7,6 +7,14 @@ extends Node2D
 @onready var battle_hud     = $BattleHUD
 @onready var turn_queue: TurnQueue = $TurnQueue
 
+# ── Compañeros dinámicos ──────────────────────────────────────────────────────
+var hero2_logic  : BaseEntity = null   # Athelios (si está en el grupo)
+var hero3_logic  : BaseEntity = null   # Byran    (si está en el grupo)
+
+# Arrays dinámicos para hover/click y selección de objetivo
+var _all_hero_entities  : Array[BaseEntity] = []
+var _all_enemy_entities : Array[BaseEntity] = []
+
 # ── Orden de turnos estilo Octopath ──────────────────────────────────────────
 const _SLOT_SHOW  : int = 7    # iconos visibles
 const _SLOT_SZ    : int = 50   # px por icono
@@ -34,6 +42,11 @@ var _active_hero: BaseEntity = null
 var _player_won: bool = false
 
 # Nombres de clase para el botón de habilidades
+const _COMPANION_STATS_PATHS: Dictionary = {
+	"athelios": "res://Resources/Characters/Athelios.tres",
+	"byran":    "res://Resources/Characters/Byran.tres",
+}
+
 const CLASS_NAMES := {
 	0: "Guerrero",
 	1: "Mago",
@@ -69,6 +82,28 @@ func _ready() -> void:
 
 	var team_heroes:  Array[BaseEntity] = [hero_logic]
 	var team_enemies: Array[BaseEntity] = [enemy_logic, enemy2_logic]
+	_all_enemy_entities = [enemy_logic, enemy2_logic]
+	_all_hero_entities  = [hero_logic]
+
+	# ── Instanciar compañeros si están en el grupo ────────────────────────────
+	var hero_x_positions := [220, 150, 80]   # posiciones X para 1-3 héroes
+
+	if Inventory.has_party_member("athelios"):
+		var s2 := preload("res://Scenes/Battle/Hero2Sprite.tscn").instantiate() as Node2D
+		add_child(s2)
+		s2.position = Vector2(hero_x_positions[1], 430)
+		hero2_logic = s2.get_node("Logic") as BaseEntity
+		team_heroes.append(hero2_logic)
+		_all_hero_entities.append(hero2_logic)
+
+	if Inventory.has_party_member("byran"):
+		var s3 := preload("res://Scenes/Battle/Hero3Sprite.tscn").instantiate() as Node2D
+		add_child(s3)
+		var x_idx := 2 if Inventory.has_party_member("athelios") else 1
+		s3.position = Vector2(hero_x_positions[x_idx], 450)
+		hero3_logic = s3.get_node("Logic") as BaseEntity
+		team_heroes.append(hero3_logic)
+		_all_hero_entities.append(hero3_logic)
 
 	battle_hud.setup(team_heroes)
 	battle_manager.start_battle(team_heroes, team_enemies)
@@ -85,12 +120,11 @@ func _process(_delta: float) -> void:
 	var mouse     := get_global_mouse_position()
 	var half      := Vector2(72, 72)
 
-	for entity: BaseEntity in [enemy_logic, enemy2_logic, hero_logic]:
+	for entity: BaseEntity in _all_enemy_entities + _all_hero_entities:
 		var s := entity.get_parent() as CombatantSprite
 		if s == null:
 			continue
 		if not selecting or not s.is_selectable:
-			# Fuera de selección: asegurarse de que no quede highlight residual
 			if s._is_hovered:
 				s._is_hovered = false
 				if entity.is_alive:
@@ -101,8 +135,8 @@ func _process(_delta: float) -> void:
 			continue
 		s._is_hovered = over
 		if over:
-			s.sprite.modulate = Color(1.6, 1.5, 0.6)   # Brillo dorado
-			s.sprite.scale    = Vector2(4.3, 4.3)       # Escala ligeramente mayor
+			s.sprite.modulate = Color(1.6, 1.5, 0.6)
+			s.sprite.scale    = Vector2(4.3, 4.3)
 		else:
 			s.sprite.modulate = Color(1.0, 1.0, 1.0)
 			s.sprite.scale    = Vector2(4.0, 4.0)
@@ -185,7 +219,7 @@ func _on_target_selection_needed(enemies: Array[BaseEntity]) -> void:
 	cancel_btn.visible = true
 
 func _on_ally_target_selection_needed(allies: Array[BaseEntity]) -> void:
-	for entity in [hero_logic]:
+	for entity in _all_hero_entities:
 		var s := entity.get_parent() as CombatantSprite
 		if s:
 			s.is_selectable = false
@@ -227,7 +261,7 @@ func _input(event: InputEvent) -> void:
 		return
 
 	# Prioridad 1: entidad que tiene el ratón encima (mouse_entered funciona)
-	for entity: BaseEntity in [enemy_logic, enemy2_logic, hero_logic]:
+	for entity: BaseEntity in _all_enemy_entities + _all_hero_entities:
 		var s := entity.get_parent() as CombatantSprite
 		if s and s.is_selectable and s._is_hovered:
 			get_viewport().set_input_as_handled()
@@ -237,7 +271,7 @@ func _input(event: InputEvent) -> void:
 	# Prioridad 2: test geométrico con coordenadas de mundo
 	var mouse := get_global_mouse_position()
 	var half  := Vector2(72, 72)
-	for entity: BaseEntity in [enemy_logic, enemy2_logic, hero_logic]:
+	for entity: BaseEntity in _all_enemy_entities + _all_hero_entities:
 		var s := entity.get_parent() as CombatantSprite
 		if s and s.is_selectable:
 			if Rect2(s.global_position - half, half * 2).has_point(mouse):
@@ -332,9 +366,20 @@ func _show_victory_screen() -> void:
 	var level_before  := Inventory.current_level
 	var xp_cap_before := Inventory.xp_to_next()
 
+	# Capturar estado XP de compañeros antes de aplicar
+	var comp_xp_before:    Dictionary = {}
+	var comp_level_before: Dictionary = {}
+	for id in Inventory.party_members:
+		comp_xp_before[id]    = Inventory.get_companion_xp(id)
+		comp_level_before[id] = Inventory.get_companion_level(id)
+
 	# Aplicar recompensas al Inventario
 	Inventory.add_xp(xp_reward)
 	Inventory.gold += gold_reward
+
+	# Dar la misma XP a cada compañero activo
+	for id in Inventory.party_members:
+		Inventory.add_companion_xp(id, xp_reward)
 
 	var level_after  := Inventory.current_level
 	var xp_after     := Inventory.current_xp
@@ -472,6 +517,61 @@ func _show_victory_screen() -> void:
 		await tw.finished
 
 	lbl_xp_vals.text = "%d / %d XP" % [xp_after, xp_cap_after]
+
+	# ── EXP de compañeros del grupo ───────────────────────────────────────────
+	for id in Inventory.party_members:
+		var c_stats: CharacterStats = load(_COMPANION_STATS_PATHS.get(id, ""))
+		if c_stats == null:
+			continue
+
+		inner_vbox.add_child(HSeparator.new())
+
+		var c_lv_b   : int  = comp_level_before.get(id, 1)
+		var c_xp_b   : int  = comp_xp_before.get(id, 0)
+		var c_xp_cap : int  = c_lv_b * 100
+		var c_lv_a   : int  = Inventory.get_companion_level(id)
+		var c_xp_a   : int  = Inventory.get_companion_xp(id)
+		var c_leveled: bool = c_lv_a > c_lv_b
+
+		var lbl_c_hero := Label.new()
+		lbl_c_hero.text = "%s   —   Nv. %d" % [c_stats.character_name, c_lv_b]
+		lbl_c_hero.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl_c_hero.add_theme_font_size_override("font_size", 16)
+		inner_vbox.add_child(lbl_c_hero)
+
+		var c_xp_bar := ProgressBar.new()
+		c_xp_bar.min_value = 0
+		c_xp_bar.max_value = c_xp_cap
+		c_xp_bar.value = c_xp_b
+		c_xp_bar.show_percentage = false
+		c_xp_bar.custom_minimum_size = Vector2(0, 24)
+		inner_vbox.add_child(c_xp_bar)
+
+		var lbl_c_xp := Label.new()
+		lbl_c_xp.text = "%d / %d XP" % [c_xp_b, c_xp_cap]
+		lbl_c_xp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		inner_vbox.add_child(lbl_c_xp)
+
+		var lbl_c_lv := Label.new()
+		lbl_c_lv.text = ""
+		lbl_c_lv.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl_c_lv.add_theme_font_size_override("font_size", 18)
+		lbl_c_lv.modulate = Color(1.0, 0.9, 0.2)
+		inner_vbox.add_child(lbl_c_lv)
+
+		if c_leveled:
+			c_xp_bar.max_value = c_lv_a * 100
+			c_xp_bar.value     = c_xp_a
+			lbl_c_xp.text      = "%d / %d XP" % [c_xp_a, c_lv_a * 100]
+			lbl_c_lv.text      = "★ ¡NIVEL %d! ★" % c_lv_a
+			lbl_c_hero.text    = "%s   —   Nv. %d" % [c_stats.character_name, c_lv_a]
+		else:
+			var c_tw := create_tween()
+			c_tw.tween_property(c_xp_bar, "value", float(c_xp_a), 0.8)
+			c_tw.parallel().tween_method(
+				func(v: float): lbl_c_xp.text = "%d / %d XP" % [int(v), c_xp_cap],
+				float(c_xp_b), float(c_xp_a), 0.8)
+			await c_tw.finished
 
 	# ── Botón de regreso ──────────────────────────────────────────────────────
 	inner_vbox.add_child(HSeparator.new())

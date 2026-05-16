@@ -58,8 +58,25 @@ func save_game(slot: int) -> void:
 		items_arr.append(_serialize_item(item))
 	data["items"] = items_arr
 
-	data["equipped_weapon"] = Inventory.equipped_weapon.item_name if Inventory.equipped_weapon else ""
-	data["equipped_armor"]  = Inventory.equipped_armor.item_name  if Inventory.equipped_armor  else ""
+	data["equipped_weapon"]  = Inventory.equipped_weapon.item_name if Inventory.equipped_weapon else ""
+	data["equipped_armor"]   = Inventory.equipped_armor.item_name  if Inventory.equipped_armor  else ""
+	data["party_members"]    = Inventory.party_members
+	data["companion_xp"]     = Inventory.companion_xp
+	data["companion_level"]  = Inventory.companion_level
+
+	# Equipo de compañeros
+	var cw_dict: Dictionary = {}
+	var ca_dict: Dictionary = {}
+	for cid in Inventory.companion_weapon.keys():
+		var w: ItemData = Inventory.companion_weapon[cid]
+		if w != null:
+			cw_dict[str(cid)] = _serialize_item(w)
+	for cid in Inventory.companion_armor.keys():
+		var a: ItemData = Inventory.companion_armor[cid]
+		if a != null:
+			ca_dict[str(cid)] = _serialize_item(a)
+	data["companion_weapon"] = cw_dict
+	data["companion_armor"]  = ca_dict
 
 	var file := FileAccess.open(_slot_path(slot), FileAccess.WRITE)
 	file.store_string(JSON.stringify(data))
@@ -97,6 +114,31 @@ func load_game(slot: int) -> bool:
 			Inventory.equipped_weapon = item
 		elif ar_name != "" and item.item_name == ar_name:
 			Inventory.equipped_armor = item
+
+	# Compañeros del grupo
+	Inventory.party_members.clear()
+	for id in data.get("party_members", []):
+		Inventory.party_members.append(str(id))
+
+	# XP y nivel de compañeros
+	Inventory.companion_xp.clear()
+	Inventory.companion_level.clear()
+	for k in data.get("companion_xp", {}).keys():
+		Inventory.companion_xp[str(k)] = int(data["companion_xp"][k])
+	for k in data.get("companion_level", {}).keys():
+		Inventory.companion_level[str(k)] = int(data["companion_level"][k])
+
+	# Equipo de compañeros
+	Inventory.companion_weapon.clear()
+	Inventory.companion_armor.clear()
+	var cw_data: Dictionary = data.get("companion_weapon", {})
+	var ca_data: Dictionary = data.get("companion_armor",  {})
+	for k in cw_data.keys():
+		var item_d: Dictionary = cw_data[k] as Dictionary
+		Inventory.companion_weapon[str(k)] = _deserialize_item(item_d)
+	for k in ca_data.keys():
+		var item_d: Dictionary = ca_data[k] as Dictionary
+		Inventory.companion_armor[str(k)] = _deserialize_item(item_d)
 
 	# Refrescar HP/MP según el nivel restaurado
 	Inventory.init_stats()

@@ -6,6 +6,13 @@ const HERO_PATHS: Array[String] = [
 ]
 var _equip_hero_index: int = 0
 
+## Compañeros conocidos (mismo orden que party_members puede registrarlos)
+const ALL_COMPANIONS: Array = [
+	{"id": "athelios", "stats": "res://Resources/Characters/Athelios.tres"},
+	{"id": "byran",    "stats": "res://Resources/Characters/Byran.tres"},
+]
+const _CLASS_NAMES: Array[String] = ["Guerrero", "Mago", "Pícaro", "Sanador", "Paladín", "Arquero"]
+
 const FONT_PATH := "res://Assets/Fonts/CinzelDecorative-Bold.ttf"
 var _font: Font
 
@@ -35,6 +42,7 @@ var _open_frame:   int    = -1
 var _slot_mode:    String = "save"
 var _feedback_lbl:      Label
 var _slot_feedback_lbl: Label
+var _party_list:        VBoxContainer = null
 
 # Confirm panel — acción pendiente
 var _pending_action:     Callable
@@ -111,7 +119,7 @@ func _build_ui() -> void:
 # ── Panel principal ────────────────────────────────────────────────────────────
 
 func _build_main_panel() -> Control:
-	var root := _make_centered_root(560, 560)
+	var root := _make_centered_root(620, 560)
 
 	var panel := root.get_child(0) as PanelContainer
 	_style_panel(panel, C_PANEL, C_BORDER)
@@ -122,81 +130,47 @@ func _build_main_panel() -> Control:
 	hbox.add_theme_constant_override("separation", 22)
 	margin.add_child(hbox)
 
-	# ── Columna izquierda: stats del personaje ────────────────────────────
+	# ── Columna izquierda: panel de grupo estilo RPG ─────────────────────
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(185, 0)
+	left.custom_minimum_size = Vector2(200, 0)
 	left.add_theme_constant_override("separation", 6)
 	hbox.add_child(left)
 
-	# Nombre con fuente RPG
-	var name_lbl := Label.new()
-	name_lbl.text = "✦  LYRA"
-	name_lbl.add_theme_font_size_override("font_size", 15)
-	name_lbl.add_theme_color_override("font_color", C_ACCENT)
-	name_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
-	name_lbl.add_theme_constant_override("shadow_offset_x", 2)
-	name_lbl.add_theme_constant_override("shadow_offset_y", 2)
+	# Cabecera GRUPO
+	var grupo_lbl := Label.new()
+	grupo_lbl.text = "✦  GRUPO"
+	grupo_lbl.add_theme_font_size_override("font_size", 14)
+	grupo_lbl.add_theme_color_override("font_color", C_ACCENT)
+	grupo_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
+	grupo_lbl.add_theme_constant_override("shadow_offset_x", 2)
+	grupo_lbl.add_theme_constant_override("shadow_offset_y", 2)
 	if _font:
-		name_lbl.add_theme_font_override("font", _font)
-	left.add_child(name_lbl)
+		grupo_lbl.add_theme_font_override("font", _font)
+	left.add_child(grupo_lbl)
+	left.add_child(_separator_h(C_BORDER, 1))
 
-	_lbl_colored(left, "Maga", 12, C_MUTED)
+	# ScrollContainer: tarjetas de personajes
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical   = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left.add_child(scroll)
+
+	_party_list = VBoxContainer.new()
+	_party_list.name                    = "PartyList"
+	_party_list.size_flags_horizontal   = Control.SIZE_EXPAND_FILL
+	_party_list.add_theme_constant_override("separation", 8)
+	scroll.add_child(_party_list)
+
+	# Oro al fondo
 	left.add_child(_separator_h(C_BORDER2, 1))
-	left.add_child(_spacer(2))
-
-	# Stats con colores diferenciados (NV = nivel con color dorado)
-	for pair in [["NV", C_TITLE], ["HP", C_HP], ["MP", C_MP], ["ATK", C_TEXT], ["DEF", C_TEXT], ["VEL", C_TEXT]]:
-		var row := HBoxContainer.new()
-		var tag_lbl := Label.new()
-		tag_lbl.custom_minimum_size = Vector2(36, 0)
-		tag_lbl.add_theme_font_size_override("font_size", 12)
-		tag_lbl.add_theme_color_override("font_color", pair[1] as Color)
-		tag_lbl.text = pair[0] as String
-		if _font:
-			tag_lbl.add_theme_font_override("font", _font)
-		row.add_child(tag_lbl)
-		var val_lbl := Label.new()
-		val_lbl.name = pair[0] as String
-		val_lbl.add_theme_font_size_override("font_size", 13)
-		val_lbl.add_theme_color_override("font_color", C_TEXT)
-		row.add_child(val_lbl)
-		left.add_child(row)
-
-	left.add_child(_spacer(6))
-	left.add_child(_separator_h(C_BORDER2, 1))
-	left.add_child(_spacer(2))
-
 	var gold_lbl := Label.new()
 	gold_lbl.name = "GoldLbl"
-	gold_lbl.add_theme_font_size_override("font_size", 13)
+	gold_lbl.add_theme_font_size_override("font_size", 12)
 	gold_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.30))
 	if _font:
 		gold_lbl.add_theme_font_override("font", _font)
 	left.add_child(gold_lbl)
-
-	left.add_child(_spacer(4))
-
-	# ── Barra de EXP ─────────────────────────────────────────────────────
-	var xp_fill := StyleBoxFlat.new()
-	xp_fill.bg_color = C_BORDER
-	xp_fill.set_corner_radius_all(3)
-	var xp_bg := StyleBoxFlat.new()
-	xp_bg.bg_color = Color(0.08, 0.06, 0.12, 1.0)
-	xp_bg.set_corner_radius_all(3)
-
-	var xp_bar := ProgressBar.new()
-	xp_bar.name = "XPBar"
-	xp_bar.custom_minimum_size = Vector2(0, 8)
-	xp_bar.show_percentage = false
-	xp_bar.add_theme_stylebox_override("fill",       xp_fill)
-	xp_bar.add_theme_stylebox_override("background", xp_bg)
-	left.add_child(xp_bar)
-
-	var xp_lbl := Label.new()
-	xp_lbl.name = "XPLbl"
-	xp_lbl.add_theme_font_size_override("font_size", 11)
-	xp_lbl.add_theme_color_override("font_color", C_MUTED)
-	left.add_child(xp_lbl)
 
 	# ── Separador vertical ────────────────────────────────────────────────
 	hbox.add_child(_separator_v(C_BORDER2))
@@ -348,32 +322,212 @@ func _show_options() -> void:
 # ── Refresco de datos ─────────────────────────────────────────────────────────
 
 func _refresh_stats() -> void:
-	var stats: CharacterStats = load(HERO_PATHS[0])
-	if stats == null:
+	if _party_list == null:
 		return
 
-	var atk_bonus := Inventory.get_attack_bonus() + Inventory.get_level_atk_bonus()
-	var def_bonus := Inventory.get_defense_bonus() + Inventory.get_level_def_bonus()
+	# Borrar tarjetas anteriores
+	for child in _party_list.get_children():
+		child.queue_free()
 
-	_set_stat_lbl("NV",  "Nivel  %d" % Inventory.current_level)
-	_set_stat_lbl("HP",  "%d / %d"   % [Inventory.current_hp, Inventory.get_max_hp()])
-	_set_stat_lbl("MP",  "%d / %d"   % [Inventory.current_mp, Inventory.get_max_mp()])
-	_set_stat_lbl("ATK", "%d%s"      % [stats.attack,  "  (+%d)" % atk_bonus if atk_bonus > 0 else ""])
-	_set_stat_lbl("DEF", "%d%s"      % [stats.defense, "  (+%d)" % def_bonus if def_bonus > 0 else ""])
-	_set_stat_lbl("VEL", "%d"        % stats.speed)
+	# ── Tarjeta de Lyra ───────────────────────────────────────────────────
+	var hero_stats: CharacterStats = load(HERO_PATHS[0])
+	if hero_stats:
+		var atk := hero_stats.attack  + Inventory.get_attack_bonus()  + Inventory.get_level_atk_bonus()
+		var def_ := hero_stats.defense + Inventory.get_defense_bonus() + Inventory.get_level_def_bonus()
+		_add_party_card(
+			_party_list, "LYRA", "Maga",
+			Inventory.current_level,
+			Inventory.current_xp, Inventory.xp_to_next(),
+			Inventory.current_hp, Inventory.get_max_hp(),
+			Inventory.current_mp, Inventory.get_max_mp(),
+			atk, def_, hero_stats.speed
+		)
 
+	# ── Tarjetas de compañeros ────────────────────────────────────────────
+	for comp: Dictionary in ALL_COMPANIONS:
+		var id    : String         = comp["id"]
+		var spath : String         = comp["stats"]
+		var cs    : CharacterStats = load(spath)
+		if Inventory.has_party_member(id):
+			var lvl   : int    = Inventory.get_companion_level(id)
+			var xp    : int    = Inventory.get_companion_xp(id)
+			var xpcap : int    = Inventory.companion_xp_to_next(id)
+			var cls   : String = _CLASS_NAMES[cs.character_class] if cs else "???"
+			var hp    : int    = (cs.max_hp + (lvl - 1) * 10) if cs else 0
+			var mp    : int    = (cs.max_mp + (lvl - 1) * 5)  if cs else 0
+			_add_party_card(
+				_party_list,
+				cs.character_name.to_upper() if cs else id.to_upper(),
+				cls, lvl, xp, xpcap,
+				hp, hp, mp, mp,
+				cs.attack   if cs else 0,
+				cs.defense  if cs else 0,
+				cs.speed    if cs else 0
+			)
+		else:
+			_add_empty_party_slot(_party_list)
+
+	# ── Oro ───────────────────────────────────────────────────────────────
 	var gold_lbl := _main_panel.find_child("GoldLbl", true, false) as Label
 	if gold_lbl:
 		gold_lbl.text = "✦  Oro:  %d" % Inventory.gold
 
-	var xp_bar := _main_panel.find_child("XPBar", true, false) as ProgressBar
-	if xp_bar:
-		xp_bar.max_value = Inventory.xp_to_next()
-		xp_bar.value     = Inventory.current_xp
+# ── Tarjeta de personaje estilo RPG ──────────────────────────────────────────
 
-	var xp_lbl := _main_panel.find_child("XPLbl", true, false) as Label
-	if xp_lbl:
-		xp_lbl.text = "EXP  %d / %d" % [Inventory.current_xp, Inventory.xp_to_next()]
+func _add_party_card(parent: Node, char_name: String, class_label: String,
+		level: int, xp: int, xp_cap: int,
+		hp: int, max_hp: int, mp: int, max_mp: int,
+		atk: int, def_: int, spd: int) -> void:
+	var card := PanelContainer.new()
+	var cs := StyleBoxFlat.new()
+	cs.bg_color    = Color(0.10, 0.08, 0.18, 0.95)
+	cs.border_color = C_BORDER
+	cs.set_border_width_all(1)
+	cs.set_corner_radius_all(5)
+	cs.content_margin_left   = 9
+	cs.content_margin_right  = 9
+	cs.content_margin_top    = 8
+	cs.content_margin_bottom = 8
+	cs.shadow_color = Color(0, 0, 0, 0.5)
+	cs.shadow_size  = 4
+	card.add_theme_stylebox_override("panel", cs)
+	parent.add_child(card)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 4)
+	card.add_child(vb)
+
+	# Cabecera: nombre + nivel
+	var hdr := HBoxContainer.new()
+	vb.add_child(hdr)
+
+	var nlbl := Label.new()
+	nlbl.text = "✦ " + char_name
+	nlbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nlbl.add_theme_font_size_override("font_size", 12)
+	nlbl.add_theme_color_override("font_color", C_TITLE)
+	if _font: nlbl.add_theme_font_override("font", _font)
+	hdr.add_child(nlbl)
+
+	var lvlbl := Label.new()
+	lvlbl.text = "Nv.%d" % level
+	lvlbl.add_theme_font_size_override("font_size", 11)
+	lvlbl.add_theme_color_override("font_color", C_MUTED)
+	if _font: lvlbl.add_theme_font_override("font", _font)
+	hdr.add_child(lvlbl)
+
+	# Clase
+	var clbl := Label.new()
+	clbl.text = class_label
+	clbl.add_theme_font_size_override("font_size", 10)
+	clbl.add_theme_color_override("font_color", C_MUTED)
+	vb.add_child(clbl)
+
+	vb.add_child(_separator_h(C_BORDER2, 1))
+
+	# Barras HP / MP
+	vb.add_child(_build_mini_bar("HP", hp, max_hp, C_HP,  Color(0.28, 0.06, 0.06)))
+	vb.add_child(_build_mini_bar("MP", mp, max_mp, C_MP,  Color(0.05, 0.10, 0.28)))
+
+	# Fila ATK / DEF / VEL
+	var sr := HBoxContainer.new()
+	sr.add_theme_constant_override("separation", 8)
+	vb.add_child(sr)
+	for pair2 in [["ATK", atk], ["DEF", def_], ["VEL", spd]]:
+		var sl := Label.new()
+		sl.text = "%s %d" % [pair2[0], pair2[1]]
+		sl.add_theme_font_size_override("font_size", 10)
+		sl.add_theme_color_override("font_color", C_MUTED)
+		sr.add_child(sl)
+
+	# Barra EXP dorada
+	var xr := HBoxContainer.new()
+	xr.add_theme_constant_override("separation", 4)
+	vb.add_child(xr)
+
+	var xbar := ProgressBar.new()
+	xbar.min_value = 0
+	xbar.max_value = xp_cap if xp_cap > 0 else 1
+	xbar.value     = xp
+	xbar.show_percentage = false
+	xbar.custom_minimum_size     = Vector2(0, 5)
+	xbar.size_flags_horizontal   = Control.SIZE_EXPAND_FILL
+	var xfill := StyleBoxFlat.new()
+	xfill.bg_color = C_BORDER
+	xfill.set_corner_radius_all(2)
+	var xbg := StyleBoxFlat.new()
+	xbg.bg_color = Color(0.07, 0.05, 0.10)
+	xbg.set_corner_radius_all(2)
+	xbar.add_theme_stylebox_override("fill",       xfill)
+	xbar.add_theme_stylebox_override("background", xbg)
+	xr.add_child(xbar)
+
+	var xlbl := Label.new()
+	xlbl.text = "EXP  %d/%d" % [xp, xp_cap]
+	xlbl.add_theme_font_size_override("font_size", 9)
+	xlbl.add_theme_color_override("font_color", C_MUTED)
+	xr.add_child(xlbl)
+
+func _add_empty_party_slot(parent: Node) -> void:
+	var card := PanelContainer.new()
+	var cs := StyleBoxFlat.new()
+	cs.bg_color    = Color(0.06, 0.05, 0.10, 0.55)
+	cs.border_color = Color(0.22, 0.17, 0.07, 0.45)
+	cs.set_border_width_all(1)
+	cs.set_corner_radius_all(5)
+	cs.content_margin_left   = 9
+	cs.content_margin_right  = 9
+	cs.content_margin_top    = 12
+	cs.content_margin_bottom = 12
+	card.add_theme_stylebox_override("panel", cs)
+	parent.add_child(card)
+
+	var lbl := Label.new()
+	lbl.text = "—  Compañero libre  —"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_color_override("font_color", Color(0.38, 0.34, 0.28, 0.55))
+	card.add_child(lbl)
+
+func _build_mini_bar(tag: String, val: int, max_val: int,
+		bar_color: Color, bg_color: Color) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+
+	var tlbl := Label.new()
+	tlbl.text = tag
+	tlbl.custom_minimum_size = Vector2(18, 0)
+	tlbl.add_theme_font_size_override("font_size", 10)
+	tlbl.add_theme_color_override("font_color", bar_color)
+	if _font: tlbl.add_theme_font_override("font", _font)
+	row.add_child(tlbl)
+
+	var bar := ProgressBar.new()
+	bar.min_value = 0
+	bar.max_value = max_val if max_val > 0 else 1
+	bar.value     = val
+	bar.show_percentage = false
+	bar.custom_minimum_size     = Vector2(0, 7)
+	bar.size_flags_horizontal   = Control.SIZE_EXPAND_FILL
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = bar_color
+	fill.set_corner_radius_all(3)
+	var bg2 := StyleBoxFlat.new()
+	bg2.bg_color = bg_color
+	bg2.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("fill",       fill)
+	bar.add_theme_stylebox_override("background", bg2)
+	row.add_child(bar)
+
+	var vlbl := Label.new()
+	vlbl.text = "%d/%d" % [val, max_val]
+	vlbl.custom_minimum_size     = Vector2(46, 0)
+	vlbl.horizontal_alignment    = HORIZONTAL_ALIGNMENT_RIGHT
+	vlbl.add_theme_font_size_override("font_size", 10)
+	vlbl.add_theme_color_override("font_color", C_TEXT)
+	row.add_child(vlbl)
+
+	return row
 
 func _set_stat_lbl(stat_name: String, value: String) -> void:
 	var lbl := _main_panel.find_child(stat_name, true, false) as Label
@@ -516,7 +670,7 @@ func _spacer(px: int) -> Control:
 # ── Panel de equipamiento ──────────────────────────────────────────────────────
 
 func _build_equip_panel() -> Control:
-	var root := _make_centered_root(500, 360)
+	var root := _make_centered_root(520, 500)
 	root.visible = false
 
 	var panel := root.get_child(0) as PanelContainer
@@ -534,7 +688,8 @@ func _build_equip_panel() -> Control:
 
 	var btn_prev := _make_button("◀", 34, 30)
 	btn_prev.pressed.connect(func():
-		_equip_hero_index = (_equip_hero_index - 1 + HERO_PATHS.size()) % HERO_PATHS.size()
+		var sz := _get_equip_chars().size()
+		_equip_hero_index = (_equip_hero_index - 1 + sz) % sz
 		_refresh_equip())
 	header.add_child(btn_prev)
 
@@ -548,7 +703,8 @@ func _build_equip_panel() -> Control:
 
 	var btn_next := _make_button("▶", 34, 30)
 	btn_next.pressed.connect(func():
-		_equip_hero_index = (_equip_hero_index + 1) % HERO_PATHS.size()
+		var sz := _get_equip_chars().size()
+		_equip_hero_index = (_equip_hero_index + 1) % sz
 		_refresh_equip())
 	header.add_child(btn_next)
 
@@ -569,24 +725,43 @@ func _build_equip_panel() -> Control:
 
 	return root
 
-func _refresh_equip() -> void:
-	# Cargar stats del héroe seleccionado
-	var stats: CharacterStats = load(HERO_PATHS[_equip_hero_index])
+## Lista dinámica de personajes disponibles en el panel de equipamiento.
+## Lyra siempre primero; luego los compañeros que se hayan unido.
+func _get_equip_chars() -> Array:
+	var result: Array = []
+	result.append({"id": "lyra", "stats": "res://Resources/Characters/Hero.tres"})
+	for comp: Dictionary in ALL_COMPANIONS:
+		var id: String = comp["id"]
+		if Inventory.has_party_member(id):
+			result.append({"id": id, "stats": comp["stats"]})
+	return result
 
-	# Actualizar nombre en la cabecera
+func _refresh_equip() -> void:
+	var chars := _get_equip_chars()
+	if chars.is_empty():
+		return
+	_equip_hero_index = clamp(_equip_hero_index, 0, chars.size() - 1)
+
+	var char_entry : Dictionary     = chars[_equip_hero_index]
+	var char_id    : String         = char_entry["id"]
+	var spath      : String         = char_entry["stats"]
+	var stats      : CharacterStats = load(spath)
+	var is_lyra    : bool           = (char_id == "lyra")
+
+	# ── Nombre en cabecera ───────────────────────────────────────────────────
 	var name_lbl := _equip_panel.find_child("HeroNameLbl", true, false) as Label
 	if name_lbl:
-		name_lbl.text = stats.character_name if stats else "Héroe"
+		name_lbl.text = "⚔  " + (stats.character_name if stats else char_id.capitalize())
 
 	var list := _equip_panel.get_child(0).get_child(0).get_child(0).get_node("EquipList") as VBoxContainer
 	for child in list.get_children():
 		child.queue_free()
 
-	# ── Stats del personaje ─────────────────────────────────────────────────
+	# ── Estadísticas base ────────────────────────────────────────────────────
 	if stats:
 		_lbl_colored(list, "ESTADÍSTICAS", 13, C_ACCENT)
-		var atk_bonus := Inventory.get_attack_bonus()
-		var def_bonus := Inventory.get_defense_bonus()
+		var atk_bonus : int = Inventory.get_attack_bonus()  if is_lyra else Inventory.get_atk_bonus_for(char_id)
+		var def_bonus : int = Inventory.get_defense_bonus() if is_lyra else Inventory.get_def_bonus_for(char_id)
 		var stats_row := HBoxContainer.new()
 		stats_row.add_theme_constant_override("separation", 18)
 		list.add_child(stats_row)
@@ -596,52 +771,126 @@ func _refresh_equip() -> void:
 		_lbl_colored(stats_row, "DEF %d%s" % [stats.defense, " (+%d)" % def_bonus if def_bonus > 0 else ""], 13, C_TEXT)
 		list.add_child(_spacer(4))
 
-	# ── Slots actuales ──────────────────────────────────────────────────────
+	# ── Equipo actual ────────────────────────────────────────────────────────
 	_lbl_colored(list, "EQUIPO ACTUAL", 13, C_ACCENT)
+	if is_lyra:
+		_add_slot_row(list, "Arma    :",
+			Inventory.equipped_weapon,
+			func(): Inventory.unequip(Inventory.equipped_weapon); _refresh_equip(); _refresh_stats())
+		_add_slot_row(list, "Armadura:",
+			Inventory.equipped_armor,
+			func(): Inventory.unequip(Inventory.equipped_armor); _refresh_equip(); _refresh_stats())
 
-	_add_slot_row(list, "Arma    :",
-		Inventory.equipped_weapon,
-		func(): Inventory.unequip(Inventory.equipped_weapon); _refresh_equip(); _refresh_stats())
+		list.add_child(_spacer(4))
+		_lbl_colored(list, "DISPONIBLE EN INVENTARIO", 13, C_ACCENT)
+		var has_any := false
+		for item: ItemData in Inventory.items:
+			if item.item_type == ItemData.ItemType.CONSUMABLE:
+				continue
+			has_any = true
+			var is_eq   : bool   = (item == Inventory.equipped_weapon or item == Inventory.equipped_armor)
+			var stat    : String = "ATK+%d" % item.attack_bonus if item.item_type == ItemData.ItemType.WEAPON \
+								   else "DEF+%d" % item.defense_bonus
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 10)
+			list.add_child(row)
+			var lbl := Label.new()
+			lbl.text = item.item_name + "  " + stat
+			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lbl.add_theme_font_size_override("font_size", 13)
+			lbl.add_theme_color_override("font_color", C_MUTED if is_eq else C_TEXT)
+			row.add_child(lbl)
+			if is_eq:
+				_lbl_colored(row, "[equipado]", 12, C_ACCENT)
+			else:
+				var captured := item
+				var btn := _make_button("Equipar", 90, 28)
+				btn.pressed.connect(func(): Inventory.equip(captured); _refresh_equip(); _refresh_stats())
+				row.add_child(btn)
+		if not has_any:
+			_lbl_colored(list, "Sin equipo disponible.", 13, C_MUTED)
+	else:
+		# Compañero: mostrar su equipo (de inicio, no del inventario)
+		_add_slot_row_info(list, "Arma    :", Inventory.get_equipped_weapon_for(char_id))
+		_add_slot_row_info(list, "Armadura:", Inventory.get_equipped_armor_for(char_id))
 
-	_add_slot_row(list, "Armadura:",
-		Inventory.equipped_armor,
-		func(): Inventory.unequip(Inventory.equipped_armor); _refresh_equip(); _refresh_stats())
+	# ── Habilidades ──────────────────────────────────────────────────────────
+	if stats and not stats.skills.is_empty():
+		list.add_child(_spacer(6))
+		list.add_child(_separator_h(C_BORDER2, 1))
+		_lbl_colored(list, "HABILIDADES", 13, C_ACCENT)
+		for sk: SkillData in stats.skills:
+			if sk:
+				_add_skill_row(list, sk)
 
-	list.add_child(_spacer(4))
+## Fila de equipo solo lectura (sin botón de desequipar).
+func _add_slot_row_info(parent: Node, label: String, item: ItemData) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	parent.add_child(row)
+	var slot_lbl := Label.new()
+	slot_lbl.text = label
+	slot_lbl.custom_minimum_size = Vector2(72, 0)
+	slot_lbl.add_theme_font_size_override("font_size", 13)
+	slot_lbl.add_theme_color_override("font_color", C_MUTED)
+	row.add_child(slot_lbl)
+	if item:
+		var stat : String = "ATK+%d" % item.attack_bonus if item.item_type == ItemData.ItemType.WEAPON \
+							else "DEF+%d" % item.defense_bonus
+		var item_lbl := Label.new()
+		item_lbl.text = item.item_name + "  " + stat
+		item_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		item_lbl.add_theme_font_size_override("font_size", 13)
+		item_lbl.add_theme_color_override("font_color", C_TEXT)
+		row.add_child(item_lbl)
+	else:
+		var empty_lbl := Label.new()
+		empty_lbl.text = "─────────────────"
+		empty_lbl.add_theme_font_size_override("font_size", 13)
+		empty_lbl.add_theme_color_override("font_color", C_MUTED)
+		row.add_child(empty_lbl)
 
-	# ── Items disponibles para equipar ─────────────────────────────────────
-	_lbl_colored(list, "DISPONIBLE EN INVENTARIO", 13, C_ACCENT)
+## Fila de habilidad: nombre · tipo · daño · coste MP.
+func _add_skill_row(parent: Node, sk: SkillData) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	parent.add_child(row)
 
-	var has_any := false
-	for item: ItemData in Inventory.items:
-		if item.item_type == ItemData.ItemType.CONSUMABLE:
-			continue
-		has_any = true
-		var is_eq := (item == Inventory.equipped_weapon or item == Inventory.equipped_armor)
-		var stat  := "ATK+%d" % item.attack_bonus if item.item_type == ItemData.ItemType.WEAPON \
-					 else "DEF+%d" % item.defense_bonus
+	var name_lbl := Label.new()
+	name_lbl.text = "• " + sk.skill_name
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.add_theme_font_size_override("font_size", 12)
+	name_lbl.add_theme_color_override("font_color", C_TEXT)
+	row.add_child(name_lbl)
 
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		list.add_child(row)
+	var type_lbl := Label.new()
+	type_lbl.text = "Mág." if sk.is_magical else "Fís."
+	type_lbl.custom_minimum_size = Vector2(32, 0)
+	type_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	type_lbl.add_theme_font_size_override("font_size", 11)
+	type_lbl.add_theme_color_override("font_color", C_MP if sk.is_magical else Color(0.9, 0.5, 0.2))
+	row.add_child(type_lbl)
 
-		var lbl := Label.new()
-		lbl.text = item.item_name + "  " + stat
-		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lbl.add_theme_font_size_override("font_size", 13)
-		lbl.add_theme_color_override("font_color", C_MUTED if is_eq else C_TEXT)
-		row.add_child(lbl)
+	var dmg_lbl := Label.new()
+	if sk.damage > 0:
+		dmg_lbl.text = "DMG %3d" % sk.damage
+	elif sk.damage < 0:
+		dmg_lbl.text = "CUR %3d" % abs(sk.damage)
+	else:
+		dmg_lbl.text = "  —    "
+	dmg_lbl.custom_minimum_size = Vector2(58, 0)
+	dmg_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	dmg_lbl.add_theme_font_size_override("font_size", 11)
+	dmg_lbl.add_theme_color_override("font_color", C_MUTED)
+	row.add_child(dmg_lbl)
 
-		if is_eq:
-			_lbl_colored(row, "[equipado]", 12, C_ACCENT)
-		else:
-			var captured := item
-			var btn := _make_button("Equipar", 90, 28)
-			btn.pressed.connect(func(): Inventory.equip(captured); _refresh_equip(); _refresh_stats())
-			row.add_child(btn)
-
-	if not has_any:
-		_lbl_colored(list, "Sin equipo disponible.", 13, C_MUTED)
+	var mp_lbl := Label.new()
+	mp_lbl.text = "MP %d" % sk.mp_cost
+	mp_lbl.custom_minimum_size = Vector2(42, 0)
+	mp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	mp_lbl.add_theme_font_size_override("font_size", 11)
+	mp_lbl.add_theme_color_override("font_color", C_MP)
+	row.add_child(mp_lbl)
 
 # ── Guardar / Cargar ──────────────────────────────────────────────────────────
 

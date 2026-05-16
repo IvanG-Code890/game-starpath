@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://bs6p3uhjgs5aa"]
+
+[ext_resource type="Script" path="res://Scripts/World/FollowerController.gd" id="1_fol"]
+
+[node name="FollowerController" type="Node2D"]
+script = ExtResource("1_fol")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, 0)

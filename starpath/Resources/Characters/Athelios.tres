@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://theli000001"]
+
+[ext_resource type="Script" uid="uid://tbrn0mdsnx0t" path="res://Scripts/CharacterStats.gd" id="1_c0c88"]
+[ext_resource type="Script" uid="uid://knxc2hn10nsh" path="res://Scripts/SkillData.gd" id="2_skill"]
+[ext_resource type="Resource" uid="uid://golfurt00001" path="res://Resources/Skills/GolpeFurtivo.tres" id="3_furt"]
+[ext_resource type="Resource" uid="uid://veneno000001" path="res://Resources/Skills/Veneno.tres" id="4_vene"]
+
+[resource]
+script = ExtResource("1_c0c88")
+character_name = "Athelios"
+character_class = 2
+max_hp = 90
+max_mp = 65
+attack = 22
+defense = 8
+speed = 18
+skills = Array[ExtResource("2_skill")]([ExtResource("3_furt"), ExtResource("4_vene")])
+metadata/_custom_type_script = "uid://tbrn0mdsnx0t"

@@ -3,6 +3,20 @@ extends Node2D
 @onready var player:     PlayerController = $Player
 @onready var pause_menu: PauseMenu        = $PauseMenu
 
+# ── Sistema de seguidores estilo Octopath ────────────────────────────────────
+const _FOLLOW_STEPS : int = 22   # frames de separación entre personajes
+const _HISTORY_MAX  : int = 300  # entradas máximas en el historial
+
+const _FOLLOWER_TEX : Dictionary = {
+	"athelios": "res://Assets/Characters/Athelios.png",
+	"byran":    "res://Assets/Characters/Byran.png",
+}
+
+var _chars_layer  : Node2D        = null
+var _path_history : Array         = []   # Array de {pos:Vector2, dir:String}
+var _followers    : Array         = []   # Array de FollowerController
+var _last_party   : Array[String] = []
+
 func _ready() -> void:
 	AudioManager.play_bgm("exploration")
 	player.menu_requested.connect(pause_menu.toggle)
@@ -11,6 +25,7 @@ func _ready() -> void:
 	_setup_map_layers()   # DESPUÉS de modificar tiles: garantiza z_index correcto
 	call_deferred("_setup_rio_layer")
 	call_deferred("_setup_camera_limits")
+	call_deferred("_setup_character_layer")
 	if Inventory.returning_from_battle:
 		Inventory.returning_from_battle = false
 		call_deferred("_restore_pre_battle_state")
@@ -178,6 +193,117 @@ func _elevate_tall_objects() -> void:
 		var ac  := tree_layer2.get_cell_atlas_coords(cell)
 		tree_trunk.set_cell(cell, src, ac, alt)
 		tree_layer2.erase_cell(cell)
+
+# Agrupa al jugador y a los CompanionNPCs en un Node2D con y_sort_enabled=true.
+# Así el orden de dibujado entre personajes depende de su Y en el mundo, sin
+# alterar los z_index de los tilemaps (que usan z_as_relative=false).
+func _setup_character_layer() -> void:
+	var chars_layer := Node2D.new()
+	chars_layer.name          = "CharactersLayer"
+	chars_layer.y_sort_enabled = true
+	chars_layer.z_index        = 0
+	chars_layer.z_as_relative  = false
+	add_child(chars_layer)
+
+	# Mueve el jugador al contenedor (conserva global_position).
+	player.reparent(chars_layer, true)
+
+	# Mueve todos los CompanionNPC al mismo contenedor.
+	for child in get_children():
+		if child is CompanionNPC:
+			child.reparent(chars_layer, true)
+
+	# Guardar referencia y conectar señal para detectar cambios en el grupo
+	_chars_layer = chars_layer
+	Inventory.changed.connect(func():
+		if _last_party != Inventory.party_members:
+			call_deferred("_update_followers")
+	)
+	call_deferred("_update_followers")
+
+# ── Seguidores: registrar historial y mover ───────────────────────────────────
+
+func _physics_process(_delta: float) -> void:
+	if player == null:
+		return
+
+	# Solo añadir al historial si el jugador realmente se desplazó.
+	# Sin esta comprobación, las entradas prepobladas se sobreescriben mientras
+	# el jugador está quieto y todos los seguidores colapsan en su posición.
+	var new_pos : Vector2 = player.global_position
+	var add_entry := true
+	if not _path_history.is_empty():
+		var last   : Dictionary = _path_history.back()
+		var lpos   : Vector2    = last["pos"] as Vector2
+		add_entry = new_pos.distance_squared_to(lpos) > 0.25   # se movió > 0.5 px
+	if add_entry:
+		_path_history.append({"pos": new_pos, "dir": player._last_dir})
+		if _path_history.size() > _HISTORY_MAX:
+			_path_history.pop_front()
+
+	# Mover cada seguidor a su posición correspondiente del historial
+	for i in _followers.size():
+		var f     : FollowerController = _followers[i]
+		if not is_instance_valid(f):
+			continue
+		var delay : int        = (i + 1) * _FOLLOW_STEPS
+		var idx   : int        = max(0, _path_history.size() - 1 - delay)
+		var e     : Dictionary = _path_history[idx]
+		f.update_from_history(e["pos"] as Vector2, e["dir"] as String)
+
+## Convierte una dirección textual en vector unitario.
+func _dir_to_vec(dir: String) -> Vector2:
+	match dir:
+		"up":    return Vector2( 0, -1)
+		"down":  return Vector2( 0,  1)
+		"left":  return Vector2(-1,  0)
+		"right": return Vector2( 1,  0)
+	return Vector2(0, 1)
+
+## Crea o destruye seguidores para que coincidan con Inventory.party_members.
+func _update_followers() -> void:
+	if _chars_layer == null:
+		return
+	# Evitar recrear si el grupo no cambió
+	if _last_party == Inventory.party_members:
+		return
+	_last_party = Inventory.party_members.duplicate()
+
+	# Eliminar seguidores anteriores
+	for f in _followers:
+		if is_instance_valid(f):
+			f.queue_free()
+	_followers.clear()
+
+	# Prepoblar el historial con una "trayectoria virtual" detrás del jugador.
+	# Así cada seguidor empieza ya en su posición correcta, sin apilarse.
+	_path_history.clear()
+	var dir_vec : Vector2 = _dir_to_vec(player._last_dir)
+	var step    : float   = 2.5   # px/frame a velocidad normal (150 px/s a 60 fps)
+	for j in _HISTORY_MAX:
+		# j=0 → entrada más antigua (más lejos); j=_HISTORY_MAX-1 → más reciente (jugador)
+		var age    : int     = _HISTORY_MAX - 1 - j
+		var offset : Vector2 = -dir_vec * step * age
+		_path_history.append({"pos": player.global_position + offset,
+							  "dir": player._last_dir})
+
+	# Crear un seguidor por cada miembro del grupo
+	var fol_scene := preload("res://Scenes/World/FollowerController.tscn")
+	for id in Inventory.party_members:
+		if not _FOLLOWER_TEX.has(id):
+			continue
+		var f        : FollowerController = fol_scene.instantiate()
+		var tex_path : String             = _FOLLOWER_TEX[id]
+		var tex      : Texture2D          = load(tex_path) as Texture2D
+		_chars_layer.add_child(f)
+		# Posición inicial = la que le asignaría el historial en el primer frame
+		var delay   : int    = (_followers.size() + 1) * _FOLLOW_STEPS
+		var idx     : int    = max(0, _path_history.size() - 1 - delay)
+		var e       : Dictionary = _path_history[idx]
+		f.global_position = e["pos"] as Vector2
+		if tex:
+			f.setup_texture(tex)
+		_followers.append(f)
 
 func _setup_camera_limits() -> void:
 	var map := get_node_or_null("map1")

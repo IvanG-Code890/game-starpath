@@ -120,9 +120,11 @@ func _process(_delta: float) -> void:
 	if _mini_cam == null:
 		return
 	if _player == null:
-		_player = get_parent().get_node_or_null("Player") as Node2D
-		if _player == null:
+		# El jugador puede estar en CharactersLayer tras el reparenting → buscar por grupo
+		var group := get_tree().get_nodes_in_group("player")
+		if group.is_empty():
 			return
+		_player = group[0] as Node2D
 	_mini_cam.global_position = _player.global_position
 
 

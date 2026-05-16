@@ -10,6 +10,103 @@ var gold:             int             = 150
 var equipped_weapon:  ItemData        = null
 var equipped_armor:   ItemData        = null
 
+## IDs de compañeros que se han unido al grupo ("athelios", "byran", …)
+var party_members: Array[String] = []
+
+func add_party_member(id: String) -> void:
+	if not has_party_member(id):
+		party_members.append(id)
+		_add_starter_equipment(id)
+		changed.emit()
+
+func has_party_member(id: String) -> bool:
+	return id in party_members
+
+## XP y nivel independiente de cada compañero (companion_id → int)
+var companion_xp:    Dictionary = {}
+var companion_level: Dictionary = {}
+
+func get_companion_level(id: String) -> int:
+	return companion_level.get(id, 1)
+
+func get_companion_xp(id: String) -> int:
+	return companion_xp.get(id, 0)
+
+func companion_xp_to_next(id: String) -> int:
+	return get_companion_level(id) * 100
+
+func add_companion_xp(id: String, amount: int) -> void:
+	if not companion_xp.has(id):
+		companion_xp[id] = 0
+	if not companion_level.has(id):
+		companion_level[id] = 1
+	companion_xp[id] += amount
+	while companion_xp[id] >= companion_xp_to_next(id):
+		companion_xp[id] -= companion_xp_to_next(id)
+		companion_level[id] += 1
+	changed.emit()
+
+## Equipo equipado por cada compañero (companion_id → ItemData | null)
+var companion_weapon: Dictionary = {}
+var companion_armor:  Dictionary = {}
+
+func get_equipped_weapon_for(id: String) -> ItemData:
+	return companion_weapon.get(id, null)
+
+func get_equipped_armor_for(id: String) -> ItemData:
+	return companion_armor.get(id, null)
+
+func get_atk_bonus_for(id: String) -> int:
+	var w: ItemData = get_equipped_weapon_for(id)
+	return w.attack_bonus if w else 0
+
+func get_def_bonus_for(id: String) -> int:
+	var a: ItemData = get_equipped_armor_for(id)
+	return a.defense_bonus if a else 0
+
+func equip_for(id: String, item: ItemData) -> void:
+	if item.item_type == ItemData.ItemType.WEAPON:
+		companion_weapon[id] = item
+	elif item.item_type == ItemData.ItemType.ARMOR:
+		companion_armor[id] = item
+	changed.emit()
+
+func unequip_for(id: String, item: ItemData) -> void:
+	if companion_weapon.get(id) == item:
+		companion_weapon[id] = null
+	elif companion_armor.get(id) == item:
+		companion_armor[id] = null
+	changed.emit()
+
+## Asigna equipo inicial al compañero cuando se une por primera vez.
+func _add_starter_equipment(id: String) -> void:
+	# No sobreescribir si ya tiene equipo asignado
+	if companion_weapon.get(id) != null or companion_armor.get(id) != null:
+		return
+	match id:
+		"athelios":
+			var dagger        := ItemData.new()
+			dagger.item_name   = "Daga"
+			dagger.item_type   = ItemData.ItemType.WEAPON
+			dagger.attack_bonus = 5
+			companion_weapon["athelios"] = dagger
+			var leather           := ItemData.new()
+			leather.item_name      = "Armadura de Cuero"
+			leather.item_type      = ItemData.ItemType.ARMOR
+			leather.defense_bonus  = 3
+			companion_armor["athelios"] = leather
+		"byran":
+			var sword         := ItemData.new()
+			sword.item_name    = "Espada Corta"
+			sword.item_type    = ItemData.ItemType.WEAPON
+			sword.attack_bonus = 8
+			companion_weapon["byran"] = sword
+			var mail           := ItemData.new()
+			mail.item_name      = "Cota de Malla"
+			mail.item_type      = ItemData.ItemType.ARMOR
+			mail.defense_bonus  = 6
+			companion_armor["byran"] = mail
+
 var current_hp: int = 0
 var current_mp: int = 0
 
