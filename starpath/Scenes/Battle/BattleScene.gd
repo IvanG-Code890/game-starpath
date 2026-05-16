@@ -5,6 +5,18 @@ extends Node2D
 @onready var enemy_logic    = $EnemySprite/Logic
 @onready var enemy2_logic   = $Enemy2Sprite/Logic
 @onready var battle_hud     = $BattleHUD
+@onready var turn_queue: TurnQueue = $TurnQueue
+
+# ── Orden de turnos estilo Octopath ──────────────────────────────────────────
+const _SLOT_SHOW  : int = 7    # iconos visibles
+const _SLOT_SZ    : int = 50   # px por icono
+const _SLOT_GAP   : int = 6    # separación entre iconos
+const _SLOT_STRIDE: int = 56   # _SLOT_SZ + _SLOT_GAP
+
+var _slot_clip  : Control = null
+var _slots      : Array   = []    # Array of Dictionaries { card, portrait, team_bar, style }
+var _slot_tween : Tween   = null
+var _first_turn : bool    = true
 
 @onready var menu_combate     = $BattleUI/VBoxContainer
 @onready var cancel_btn       = $BattleUI/CancelarButton
@@ -51,6 +63,7 @@ func _ready() -> void:
 	battle_manager.battle_ended.connect(_on_battle_ended)
 	battle_manager.active_entity_changed.connect(battle_hud.set_active_entity)
 	battle_manager.active_entity_changed.connect(_on_active_entity_changed)
+	battle_manager.active_entity_changed.connect(_update_turn_order_highlight)
 	battle_manager.target_selection_needed.connect(_on_target_selection_needed)
 	battle_manager.ally_target_selection_needed.connect(_on_ally_target_selection_needed)
 
@@ -59,6 +72,9 @@ func _ready() -> void:
 
 	battle_hud.setup(team_heroes)
 	battle_manager.start_battle(team_heroes, team_enemies)
+
+	# La cola ya está ordenada por velocidad tras start_battle → construir HUD
+	_build_turn_order_ui()
 
 # ── Hover visual en selección de objetivo ────────────────────────────────────
 
@@ -472,3 +488,185 @@ func _show_victory_screen() -> void:
 	btn_map.pressed.connect(func():
 		SceneTransition.go_to("res://Scenes/World/WorldMap.tscn")
 	)
+
+# ── Orden de turnos – conveyor belt estilo Octopath ──────────────────────────
+
+func _build_turn_order_ui() -> void:
+	var canvas := CanvasLayer.new()
+	canvas.layer = 6
+	add_child(canvas)
+
+	# Contenedor con clip: corta los slots que salen/entran por los lados
+	_slot_clip = Control.new()
+	_slot_clip.clip_contents  = true
+	_slot_clip.position       = Vector2(10, 10)
+	_slot_clip.size           = Vector2(
+		_SLOT_SHOW * _SLOT_STRIDE - _SLOT_GAP,
+		_SLOT_SZ
+	)
+	_slot_clip.mouse_filter   = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(_slot_clip)
+
+	# SLOT_SHOW visibles + 1 extra que entra desde la derecha al animar
+	for i in range(_SLOT_SHOW + 1):
+		var slot := _make_slot()
+		slot["card"].position = Vector2(i * _SLOT_STRIDE, 0)
+		_slot_clip.add_child(slot["card"])
+		_slots.append(slot)
+
+# ── Fabrica un slot vacío y devuelve su diccionario ───────────────────────────
+
+func _make_slot() -> Dictionary:
+	var style := StyleBoxFlat.new()
+	style.bg_color                   = Color(0.07, 0.07, 0.12, 0.92)
+	style.corner_radius_top_left     = 7
+	style.corner_radius_top_right    = 7
+	style.corner_radius_bottom_left  = 7
+	style.corner_radius_bottom_right = 7
+	style.border_width_left          = 2
+	style.border_width_right         = 2
+	style.border_width_top           = 2
+	style.border_width_bottom        = 2
+	style.border_color               = Color(0.45, 0.45, 0.50, 0.75)
+	style.shadow_size                = 4
+	style.shadow_color               = Color(0.0, 0.0, 0.0, 0.50)
+	style.shadow_offset              = Vector2(2, 2)
+
+	# Panel (no Container → no gestiona el layout de sus hijos)
+	var card := Panel.new()
+	card.size         = Vector2(_SLOT_SZ, _SLOT_SZ)
+	card.add_theme_stylebox_override("panel", style)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.pivot_offset = Vector2(_SLOT_SZ * 0.5, _SLOT_SZ * 0.5)
+
+	# Retrato pixel-art
+	var portrait := TextureRect.new()
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.expand_mode    = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	portrait.stretch_mode   = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	portrait.mouse_filter   = Control.MOUSE_FILTER_IGNORE
+	card.add_child(portrait)
+
+	# Franja de equipo (abajo)
+	var team_bar := ColorRect.new()
+	team_bar.anchor_left   = 0.0
+	team_bar.anchor_right  = 1.0
+	team_bar.anchor_top    = 1.0
+	team_bar.anchor_bottom = 1.0
+	team_bar.offset_top    = -6
+	team_bar.offset_bottom = 0
+	team_bar.color         = Color(0.5, 0.5, 0.5, 0.6)
+	team_bar.mouse_filter  = Control.MOUSE_FILTER_IGNORE
+	card.add_child(team_bar)
+
+	return { "card": card, "portrait": portrait, "team_bar": team_bar, "style": style }
+
+# ── Rellena / actualiza el contenido visual de un slot ───────────────────────
+
+func _set_slot_content(slot: Dictionary, entity: BaseEntity, is_active: bool) -> void:
+	var card     : Panel        = slot["card"]
+	var portrait : TextureRect  = slot["portrait"]
+	var team_bar : ColorRect    = slot["team_bar"]
+	var style    : StyleBoxFlat = slot["style"]
+
+	if entity == null:
+		card.visible = false
+		return
+	card.visible = true
+
+	if not entity.is_alive:
+		card.modulate = Color(0.28, 0.28, 0.28, 0.45)
+		return
+
+	card.modulate = Color(1.18, 1.12, 1.0) if is_active else Color(1.0, 1.0, 1.0)
+	card.scale    = Vector2(1.10, 1.10)    if is_active else Vector2(1.0, 1.0)
+
+	var is_hero := entity.get_parent().is_in_group("Heroes")
+	team_bar.color = Color(0.25, 0.55, 1.0, 0.85) if is_hero else Color(0.9, 0.22, 0.22, 0.85)
+
+	# Borde: dorado si activo, gris si no
+	if is_active:
+		style.border_color        = Color(1.0, 0.85, 0.15, 1.0)
+		style.border_width_left   = 3
+		style.border_width_right  = 3
+		style.border_width_top    = 3
+		style.border_width_bottom = 3
+	else:
+		style.border_color        = Color(0.45, 0.45, 0.50, 0.75)
+		style.border_width_left   = 2
+		style.border_width_right  = 2
+		style.border_width_top    = 2
+		style.border_width_bottom = 2
+
+	# Retrato: recorta el frame 0 de la fila correspondiente
+	var cs := entity.get_parent() as CombatantSprite
+	if cs != null and cs.sprite_texture != null:
+		var row      : int = 2 if not cs.facing_left else 1
+		var n_rows   : int = cs.sprite_texture.get_height() / 32
+		if row >= n_rows:
+			row = 0
+		var at := AtlasTexture.new()
+		at.atlas  = cs.sprite_texture
+		at.region = Rect2(0, row * 32, 32, 32)
+		portrait.texture = at
+
+# ── Calcula los próximos `count` turnos (índice 0 = activo actual) ───────────
+
+func _get_turn_sequence(active: BaseEntity, count: int) -> Array[BaseEntity]:
+	var result : Array[BaseEntity] = [active]
+	var q_size  : int = turn_queue.queue.size()
+	if q_size == 0:
+		return result
+	var idx      : int = turn_queue.active_index   # ya apunta al siguiente
+	var attempts : int = 0
+	while result.size() < count and attempts < q_size * (count + 2):
+		var e := turn_queue.queue[idx % q_size]
+		idx      += 1
+		attempts += 1
+		if e.is_alive:
+			result.append(e)
+	return result
+
+# ── Actualiza la cola con animación de conveyor belt ─────────────────────────
+
+func _update_turn_order_highlight(active: BaseEntity) -> void:
+	var sequence := _get_turn_sequence(active, _SLOT_SHOW + 1)
+
+	# Primera vez: rellenar sin animación
+	if _first_turn:
+		_first_turn = false
+		for i in range(_SLOT_SHOW + 1):
+			_set_slot_content(_slots[i], sequence[i] if i < sequence.size() else null, i == 0)
+		return
+
+	# Matar tween anterior y restaurar posiciones si estaba a medias
+	if _slot_tween and _slot_tween.is_running():
+		_slot_tween.kill()
+		for i in range(_slots.size()):
+			_slots[i]["card"].position.x = i * _SLOT_STRIDE
+
+	# Preparar slot extra (oculto a la derecha) con el último de la secuencia
+	var tail_entity : BaseEntity = sequence[_SLOT_SHOW] if _SLOT_SHOW < sequence.size() else null
+	_set_slot_content(_slots[_SLOT_SHOW], tail_entity, false)
+	_slots[_SLOT_SHOW]["card"].position.x = _SLOT_SHOW * _SLOT_STRIDE
+
+	# ── Animar: todos los slots se deslizan a la izquierda ───────────────────
+	_slot_tween = create_tween()
+	_slot_tween.set_parallel(true)
+	for slot in _slots:
+		var c : Panel = slot["card"]
+		_slot_tween.tween_property(c, "position:x",
+			c.position.x - _SLOT_STRIDE, 0.20) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+
+	await _slot_tween.finished
+
+	# ── Post-slide: rotar array y reciclar el primer slot ───────────────────
+	var recycled = _slots[0]
+	_slots = _slots.slice(1) + [recycled]          # rotación lógica
+	recycled["card"].position.x = _SLOT_SHOW * _SLOT_STRIDE  # off-screen derecha
+
+	# Actualizar contenido de todos los slots según la nueva secuencia
+	for i in range(_SLOT_SHOW + 1):
+		_set_slot_content(_slots[i], sequence[i] if i < sequence.size() else null, i == 0)
