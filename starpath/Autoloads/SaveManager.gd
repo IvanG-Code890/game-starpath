@@ -31,6 +31,7 @@ func get_slot_info(slot: int) -> Dictionary:
 		"empty":     false,
 		"save_date": data.get("save_date", "??"),
 		"gold":      int(data.get("gold", 0)),
+		"level":     int(data.get("level", 1)),
 	}
 
 func save_game(slot: int) -> void:
@@ -43,7 +44,9 @@ func save_game(slot: int) -> void:
 		data["pos_y"] = player.global_position.y
 		data["dir"]   = player._last_dir
 
-	data["gold"] = Inventory.gold
+	data["gold"]  = Inventory.gold
+	data["level"] = Inventory.current_level
+	data["xp"]    = Inventory.current_xp
 
 	var items_arr: Array = []
 	for item: ItemData in Inventory.items:
@@ -73,6 +76,8 @@ func load_game(slot: int) -> bool:
 		return false
 
 	Inventory.gold            = int(data.get("gold", 150))
+	Inventory.current_level   = int(data.get("level", 1))
+	Inventory.current_xp      = int(data.get("xp",    0))
 	Inventory.items.clear()
 	Inventory.equipped_weapon = null
 	Inventory.equipped_armor  = null
@@ -87,6 +92,10 @@ func load_game(slot: int) -> bool:
 			Inventory.equipped_weapon = item
 		elif ar_name != "" and item.item_name == ar_name:
 			Inventory.equipped_armor = item
+
+	# Refrescar HP/MP según el nivel restaurado
+	Inventory.init_stats()
+	Inventory.changed.emit()
 
 	var player := _find_player()
 	if player and data.has("pos_x"):

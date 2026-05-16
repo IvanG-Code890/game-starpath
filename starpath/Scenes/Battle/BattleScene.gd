@@ -105,6 +105,7 @@ func _on_menu_toggled(show_menu: bool) -> void:
 		if not show_menu:
 			skills_panel.visible  = false
 			objetos_panel.visible = false
+			cancel_btn.visible    = false
 		else:
 			cancel_btn.visible = false
 			_update_menu_for_hero(_active_hero)
@@ -118,6 +119,7 @@ func _on_target_selection_needed(enemies: Array[BaseEntity]) -> void:
 				s.clicked.disconnect(_on_enemy_sprite_clicked)
 
 	if enemies.is_empty():
+		cancel_btn.visible = false
 		return
 
 	for entity: BaseEntity in enemies:
@@ -137,6 +139,7 @@ func _on_ally_target_selection_needed(allies: Array[BaseEntity]) -> void:
 				s.clicked.disconnect(_on_ally_sprite_clicked)
 
 	if allies.is_empty():
+		cancel_btn.visible = false
 		return
 
 	for entity: BaseEntity in allies:
@@ -228,5 +231,5 @@ func _on_battle_ended(player_won: bool) -> void:
 		get_tree().current_scene.add_child(game_over)
 
 func _on_btn_reiniciar_pressed() -> void:
-	get_tree().change_scene_to_file("res://Scenes/World/WorldMap.tscn")
+	SceneTransition.go_to("res://Scenes/World/WorldMap.tscn")
 

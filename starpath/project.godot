@@ -24,6 +24,8 @@ SaveManager="*res://Autoloads/SaveManager.gd"
 AudioManager="*res://Autoloads/AudioManager.gd"
 SettingsManager="*res://Autoloads/SettingsManager.gd"
 TutorialManager="*res://Autoloads/TutorialManager.gd"
+SceneTransition="*res://Autoloads/SceneTransition.gd"
+LevelUpPopup="*res://Scripts/UI/LevelUpPopup.gd"
 
 [display]
 

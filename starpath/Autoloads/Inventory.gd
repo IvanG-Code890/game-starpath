@@ -1,6 +1,7 @@
 extends Node
 
 signal changed
+signal level_changed(new_level: int)
 
 const HERO_STATS_PATH := "res://Resources/Characters/Hero.tres"
 
@@ -12,13 +13,63 @@ var equipped_armor:   ItemData        = null
 var current_hp: int = 0
 var current_mp: int = 0
 
+# Posición guardada justo antes de entrar en combate
+var pre_battle_position:  Vector2 = Vector2.ZERO
+var pre_battle_direction: String  = "down"
+var returning_from_battle: bool   = false
+
+# ── Progresión ────────────────────────────────────────────────────────────────
+var current_level: int = 1
+var current_xp:    int = 0
+
+# Base stats leídas de Hero.tres en _ready() (no cambian por nivel)
+var _base_max_hp: int = 80
+var _base_max_mp: int = 100
+
+## HP máximo según nivel actual (base + bonificación por nivel).
+func get_max_hp() -> int:
+	return _base_max_hp + (current_level - 1) * 10
+
+## MP máximo según nivel actual.
+func get_max_mp() -> int:
+	return _base_max_mp + (current_level - 1) * 5
+
+## XP necesaria para pasar del nivel actual al siguiente.
+func xp_to_next() -> int:
+	return current_level * 100
+
+## Otorga XP; si supera el umbral, sube de nivel (puede ocurrir varias veces).
+func add_xp(amount: int) -> void:
+	current_xp += amount
+	while current_xp >= xp_to_next():
+		current_xp -= xp_to_next()
+		current_level += 1
+		_apply_level_up()
+	changed.emit()
+
+func _apply_level_up() -> void:
+	current_hp = get_max_hp()   # HP y MP restaurados al nuevo máximo
+	current_mp = get_max_mp()
+	level_changed.emit(current_level)
+
+## Bonificación de ataque acumulada por niveles.
+func get_level_atk_bonus() -> int:
+	return (current_level - 1) * 2
+
+## Bonificación de defensa acumulada por niveles.
+func get_level_def_bonus() -> int:
+	return current_level - 1
+
+## Inicializa HP/MP al máximo para el nivel actual (usar en nueva partida y carga).
 func init_stats() -> void:
-	var stats: CharacterStats = load(HERO_STATS_PATH)
-	if stats:
-		current_hp = stats.max_hp
-		current_mp = stats.max_mp
+	current_hp = get_max_hp()
+	current_mp = get_max_mp()
 
 func _ready() -> void:
+	var base: CharacterStats = load(HERO_STATS_PATH)
+	if base:
+		_base_max_hp = base.max_hp
+		_base_max_mp = base.max_mp
 	init_stats()
 	var pocion := ItemData.new()
 	pocion.item_name   = "Poción"

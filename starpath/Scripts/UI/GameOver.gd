@@ -57,11 +57,11 @@ func _on_load_pressed() -> void:
 	for slot in range(SaveManager.SLOT_COUNT):
 		if SaveManager.has_save(slot):
 			if SaveManager.load_game(slot):
-				get_tree().change_scene_to_file(WORLD_MAP_SCENE)
+				SceneTransition.go_to(WORLD_MAP_SCENE)
 				return
 	# Si no hay partidas, ir al menú
-	get_tree().change_scene_to_file(MENU_SCENE)
+	SceneTransition.go_to(MENU_SCENE)
 
 
 func _on_menu_pressed() -> void:
-	get_tree().change_scene_to_file(MENU_SCENE)
+	SceneTransition.go_to(MENU_SCENE)

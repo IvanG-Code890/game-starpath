@@ -6,4 +6,7 @@ func _ready() -> void:
 
 func _on_body_entered(body: Node) -> void:
 	if body is PlayerController:
-		get_tree().call_deferred("change_scene_to_file", "res://Scenes/Battle/BattleScene.tscn")
+		Inventory.pre_battle_position  = body.global_position
+		Inventory.pre_battle_direction = body._last_dir
+		Inventory.returning_from_battle = true
+		SceneTransition.go_to("res://Scenes/Battle/BattleScene.tscn")

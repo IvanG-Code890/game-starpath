@@ -122,7 +122,7 @@ func _build_popup() -> void:
 
 # ── Mostrar ───────────────────────────────────────────────────────────────────
 
-func _on_show_requested(id: String, title: String, body: String, blocking: bool) -> void:
+func _on_show_requested(_id: String, title: String, body: String, blocking: bool) -> void:
 	_title_lbl.text  = title
 	_body_lbl.text   = body
 	_blocking        = blocking

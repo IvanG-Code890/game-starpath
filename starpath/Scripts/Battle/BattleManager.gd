@@ -80,8 +80,8 @@ func _execute_enemy_ai(enemy: BaseEntity) -> void:
 		return
 	var target = alive_heroes[randi() % alive_heroes.size()]
 
-	# 2. Le aplica daño
-	var damage_dealt = enemy.stats.attack
+	# 2. Le aplica daño (el nivel del jugador aporta defensa extra)
+	var damage_dealt := maxi(1, enemy.stats.attack - Inventory.get_level_def_bonus())
 	target.take_damage(damage_dealt)
 	_log(enemy.stats.character_name + " ataca a " + target.stats.character_name + ". ¡Ay!")
 	
@@ -101,7 +101,8 @@ func player_action_selected(action_name: String) -> void:
 	if action_name == "Atacar":
 		var defender = _get_first_enemy()
 		if defender:
-			defender.take_damage(attacker.stats.attack)
+			var dmg: int = attacker.stats.attack + Inventory.get_attack_bonus() + Inventory.get_level_atk_bonus()
+			defender.take_damage(dmg)
 			_log("¡PUM! " + defender.stats.character_name + " recibe daño.")
 	elif action_name == "Curar":
 		var success = attacker.heal_self()
@@ -175,7 +176,8 @@ func player_target_confirmed(target: BaseEntity) -> void:
 	else:
 		_log(attacker.stats.character_name + " ataca a " + target.stats.character_name + "!")
 		await get_tree().create_timer(1.0).timeout
-		var equip_bonus := Inventory.get_attack_bonus() if attacker.get_parent().is_in_group("Heroes") else 0
+		var equip_bonus := Inventory.get_attack_bonus() + Inventory.get_level_atk_bonus() \
+				if attacker.get_parent().is_in_group("Heroes") else 0
 		target.take_damage(attacker.stats.attack + equip_bonus)
 		_log("¡PUM! " + target.stats.character_name + " recibe daño.")
 
@@ -226,7 +228,21 @@ func _check_battle_end() -> bool:
 		battle_ended.emit(false) # false = el jugador no ganó
 		return true
 	elif not enemies_alive:
+		# ── Recompensa de XP ──────────────────────────────────────────────
+		var total_xp := 0
+		for entity in turn_queue.queue:
+			if entity.get_parent().is_in_group("Enemies") and not entity.is_alive:
+				var xp_val := entity.stats.xp_reward
+				if xp_val <= 0:
+					xp_val = entity.stats.max_hp / 2 + entity.stats.attack
+				total_xp += xp_val
 		_log("¡Victoria! Los enemigos han sido derrotados.")
+		if total_xp > 0:
+			var lvl_before := Inventory.current_level
+			Inventory.add_xp(total_xp)
+			_log("+ %d EXP  (Total: %d / %d)" % [total_xp, Inventory.current_xp, Inventory.xp_to_next()])
+			if Inventory.current_level > lvl_before:
+				_log("★ ¡NIVEL %d!  +10 HP  +5 MP  +2 ATK  +1 DEF  +1 VEL" % Inventory.current_level)
 		current_state = BattleState.WON
 		battle_ended.emit(true) # true = el jugador ganó
 		return true

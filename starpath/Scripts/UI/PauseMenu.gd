@@ -144,8 +144,8 @@ func _build_main_panel() -> Control:
 	left.add_child(_separator_h(C_BORDER2, 1))
 	left.add_child(_spacer(2))
 
-	# Stats con colores diferenciados
-	for pair in [["HP", C_HP], ["MP", C_MP], ["ATK", C_TEXT], ["DEF", C_TEXT], ["VEL", C_TEXT]]:
+	# Stats con colores diferenciados (NV = nivel con color dorado)
+	for pair in [["NV", C_TITLE], ["HP", C_HP], ["MP", C_MP], ["ATK", C_TEXT], ["DEF", C_TEXT], ["VEL", C_TEXT]]:
 		var row := HBoxContainer.new()
 		var tag_lbl := Label.new()
 		tag_lbl.custom_minimum_size = Vector2(36, 0)
@@ -173,6 +173,30 @@ func _build_main_panel() -> Control:
 	if _font:
 		gold_lbl.add_theme_font_override("font", _font)
 	left.add_child(gold_lbl)
+
+	left.add_child(_spacer(4))
+
+	# ── Barra de EXP ─────────────────────────────────────────────────────
+	var xp_fill := StyleBoxFlat.new()
+	xp_fill.bg_color = C_BORDER
+	xp_fill.set_corner_radius_all(3)
+	var xp_bg := StyleBoxFlat.new()
+	xp_bg.bg_color = Color(0.08, 0.06, 0.12, 1.0)
+	xp_bg.set_corner_radius_all(3)
+
+	var xp_bar := ProgressBar.new()
+	xp_bar.name = "XPBar"
+	xp_bar.custom_minimum_size = Vector2(0, 8)
+	xp_bar.show_percentage = false
+	xp_bar.add_theme_stylebox_override("fill",       xp_fill)
+	xp_bar.add_theme_stylebox_override("background", xp_bg)
+	left.add_child(xp_bar)
+
+	var xp_lbl := Label.new()
+	xp_lbl.name = "XPLbl"
+	xp_lbl.add_theme_font_size_override("font_size", 11)
+	xp_lbl.add_theme_color_override("font_color", C_MUTED)
+	left.add_child(xp_lbl)
 
 	# ── Separador vertical ────────────────────────────────────────────────
 	hbox.add_child(_separator_v(C_BORDER2))
@@ -328,18 +352,28 @@ func _refresh_stats() -> void:
 	if stats == null:
 		return
 
-	var atk_bonus := Inventory.get_attack_bonus()
-	var def_bonus := Inventory.get_defense_bonus()
+	var atk_bonus := Inventory.get_attack_bonus() + Inventory.get_level_atk_bonus()
+	var def_bonus := Inventory.get_defense_bonus() + Inventory.get_level_def_bonus()
 
-	_set_stat_lbl("HP",  "%d / %d" % [stats.max_hp, stats.max_hp])
-	_set_stat_lbl("MP",  "%d / %d" % [stats.max_mp, stats.max_mp])
-	_set_stat_lbl("ATK", "%d%s"    % [stats.attack,  "  (+%d)" % atk_bonus if atk_bonus > 0 else ""])
-	_set_stat_lbl("DEF", "%d%s"    % [stats.defense, "  (+%d)" % def_bonus if def_bonus > 0 else ""])
-	_set_stat_lbl("VEL", "%d"      % stats.speed)
+	_set_stat_lbl("NV",  "Nivel  %d" % Inventory.current_level)
+	_set_stat_lbl("HP",  "%d / %d"   % [Inventory.current_hp, Inventory.get_max_hp()])
+	_set_stat_lbl("MP",  "%d / %d"   % [Inventory.current_mp, Inventory.get_max_mp()])
+	_set_stat_lbl("ATK", "%d%s"      % [stats.attack,  "  (+%d)" % atk_bonus if atk_bonus > 0 else ""])
+	_set_stat_lbl("DEF", "%d%s"      % [stats.defense, "  (+%d)" % def_bonus if def_bonus > 0 else ""])
+	_set_stat_lbl("VEL", "%d"        % stats.speed)
 
 	var gold_lbl := _main_panel.find_child("GoldLbl", true, false) as Label
 	if gold_lbl:
 		gold_lbl.text = "✦  Oro:  %d" % Inventory.gold
+
+	var xp_bar := _main_panel.find_child("XPBar", true, false) as ProgressBar
+	if xp_bar:
+		xp_bar.max_value = Inventory.xp_to_next()
+		xp_bar.value     = Inventory.current_xp
+
+	var xp_lbl := _main_panel.find_child("XPLbl", true, false) as Label
+	if xp_lbl:
+		xp_lbl.text = "EXP  %d / %d" % [Inventory.current_xp, Inventory.xp_to_next()]
 
 func _set_stat_lbl(stat_name: String, value: String) -> void:
 	var lbl := _main_panel.find_child(stat_name, true, false) as Label
@@ -921,7 +955,7 @@ func _on_main_menu_pressed() -> void:
 		func():
 			AudioManager.stop_bgm()
 			get_tree().paused = false
-			get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+			SceneTransition.go_to(MAIN_MENU_SCENE)
 	)
 
 func _build_confirm_panel() -> Control:

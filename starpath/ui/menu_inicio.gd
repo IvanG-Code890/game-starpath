@@ -190,7 +190,7 @@ func _maybe_add_continue_button() -> void:
 func _load_slot(slot: int) -> void:
 	if SaveManager.load_game(slot):
 		TutorialManager.skip_all()
-		get_tree().change_scene_to_file(WORLD_MAP_SCENE)
+		SceneTransition.go_to(WORLD_MAP_SCENE)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -334,13 +334,15 @@ func _build_confirm_dialog() -> void:
 
 func _start_new_game() -> void:
 	Inventory.gold             = 150
+	Inventory.current_level    = 1
+	Inventory.current_xp       = 0
 	Inventory.items.clear()
 	Inventory.equipped_weapon  = null
 	Inventory.equipped_armor   = null
 	Inventory.init_stats()
 	TutorialManager.reset()
 	SaveManager.has_unsaved_changes = true
-	get_tree().change_scene_to_file(WORLD_MAP_SCENE)
+	SceneTransition.go_to(WORLD_MAP_SCENE)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -490,7 +492,7 @@ func _populate_load_slots() -> void:
 			continue
 		has_any = true
 		var btn := Button.new()
-		btn.text                = "Slot %d  —  %s  —  %d oro" % [slot + 1, info.get("save_date", "??"), info.get("gold", 0)]
+		btn.text                = "Slot %d  —  Nv.%d  —  %s  —  %d oro" % [slot + 1, info.get("level", 1), info.get("save_date", "??"), info.get("gold", 0)]
 		btn.custom_minimum_size = Vector2(0, 40)
 		if _font:
 			btn.add_theme_font_override("font", _font)
@@ -511,7 +513,7 @@ func _populate_load_slots() -> void:
 func _on_slot_selected(slot: int) -> void:
 	if SaveManager.load_game(slot):
 		TutorialManager.skip_all()
-		get_tree().change_scene_to_file(WORLD_MAP_SCENE)
+		SceneTransition.go_to(WORLD_MAP_SCENE)
 
 func _on_load_back_pressed() -> void:
 	_load_panel.visible    = false

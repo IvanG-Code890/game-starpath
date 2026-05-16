@@ -53,10 +53,21 @@ func _on_mouse_exited() -> void:
 # ── Reacciones Visuales ────────────────────────────────────────────────────
 
 func _on_stats_changed() -> void:
+	var new_hp: int = entity_logic.current_hp
 	health_bar.max_value = entity_logic.stats.max_hp
-	health_bar.value = entity_logic.current_hp
-	mana_bar.max_value = entity_logic.stats.max_mp
-	mana_bar.value = entity_logic.current_mp
+	health_bar.value     = new_hp
+	mana_bar.max_value   = entity_logic.stats.max_mp
+	mana_bar.value       = entity_logic.current_mp
+
+	# Números flotantes de daño / curación (se saltan en la inicialización)
+	if _initialized:
+		var delta := new_hp - _prev_hp
+		if delta < 0:
+			_spawn_floating_text("-%d" % -delta, Color(1.0, 0.30, 0.30))
+		elif delta > 0:
+			_spawn_floating_text("+%d" % delta,  Color(0.30, 1.0, 0.45))
+
+	_prev_hp = new_hp
 
 func _on_defense_changed(defending: bool) -> void:
 	sprite.modulate = Color(0.55, 0.8, 1.0) if defending else Color(1, 1, 1)

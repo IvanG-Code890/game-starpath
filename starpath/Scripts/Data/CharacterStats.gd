@@ -11,3 +11,7 @@ enum ClassType { GUERRERO, MAGO, PICARO, SANADOR, PALADIN, ARQUERO }
 @export var defense: int = 10
 @export var speed: int = 15
 @export var skills: Array[SkillData] = []
+
+## XP que otorga este personaje/enemigo al ser derrotado.
+## Si es 0 el sistema usa la fórmula (max_hp/2 + attack) como fallback.
+@export var xp_reward: int = 0

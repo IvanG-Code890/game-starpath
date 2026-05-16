@@ -11,7 +11,15 @@ func _ready() -> void:
 	_setup_map_layers()   # DESPUÉS de modificar tiles: garantiza z_index correcto
 	call_deferred("_setup_rio_layer")
 	call_deferred("_setup_camera_limits")
-	call_deferred("_trigger_lore_tutorial")
+	if Inventory.returning_from_battle:
+		Inventory.returning_from_battle = false
+		call_deferred("_restore_pre_battle_state")
+	else:
+		call_deferred("_trigger_lore_tutorial")
+
+func _restore_pre_battle_state() -> void:
+	player.global_position = Inventory.pre_battle_position
+	player._last_dir       = Inventory.pre_battle_direction
 
 func _trigger_lore_tutorial() -> void:
 	TutorialManager.try_show(
