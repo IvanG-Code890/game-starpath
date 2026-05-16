@@ -11,6 +11,15 @@ func _ready() -> void:
 	_setup_map_layers()   # DESPUÉS de modificar tiles: garantiza z_index correcto
 	call_deferred("_setup_rio_layer")
 	call_deferred("_setup_camera_limits")
+	call_deferred("_trigger_lore_tutorial")
+
+func _trigger_lore_tutorial() -> void:
+	TutorialManager.try_show(
+		"lore",
+		"✦  STARPATH",
+		"En el reino de Aetheria, una oscuridad sin nombre avanza desde las tierras del norte.\n\nLyra, joven maga del pueblo de Valden, recibe una señal del cosmos: las estrellas se apagan una a una.\n\nSolo tú puedes seguir el Camino de las Estrellas y descubrir la verdad antes de que la última luz se extinga.",
+		true
+	)
 
 func _setup_rio_layer() -> void:
 	var map := get_node_or_null("map1")

@@ -189,6 +189,7 @@ func _maybe_add_continue_button() -> void:
 
 func _load_slot(slot: int) -> void:
 	if SaveManager.load_game(slot):
+		TutorialManager.skip_all()
 		get_tree().change_scene_to_file(WORLD_MAP_SCENE)
 
 
@@ -337,6 +338,7 @@ func _start_new_game() -> void:
 	Inventory.equipped_weapon  = null
 	Inventory.equipped_armor   = null
 	Inventory.init_stats()
+	TutorialManager.reset()
 	SaveManager.has_unsaved_changes = true
 	get_tree().change_scene_to_file(WORLD_MAP_SCENE)
 
@@ -508,6 +510,7 @@ func _populate_load_slots() -> void:
 
 func _on_slot_selected(slot: int) -> void:
 	if SaveManager.load_game(slot):
+		TutorialManager.skip_all()
 		get_tree().change_scene_to_file(WORLD_MAP_SCENE)
 
 func _on_load_back_pressed() -> void:

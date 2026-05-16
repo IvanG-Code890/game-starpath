@@ -23,6 +23,7 @@ ShopManager="*res://Autoloads/ShopManager.gd"
 SaveManager="*res://Autoloads/SaveManager.gd"
 AudioManager="*res://Autoloads/AudioManager.gd"
 SettingsManager="*res://Autoloads/SettingsManager.gd"
+TutorialManager="*res://Autoloads/TutorialManager.gd"
 
 [display]
 

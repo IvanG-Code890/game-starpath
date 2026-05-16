@@ -136,6 +136,12 @@ func _on_body_entered(body: Node2D) -> void:
 	_player.interaction_requested.connect(_on_interact)
 	if not DialogManager.is_open:
 		_hint.show()
+	TutorialManager.try_show(
+		"npc",
+		"Personajes",
+		"Pulsa  E  para hablar con los personajes del mundo.\n\nAlgunos son comerciantes: podrás comprarles armas, armaduras y objetos con el oro que llevas.",
+		false
+	)
 
 func _on_body_exited(body: Node2D) -> void:
 	if body is not PlayerController:

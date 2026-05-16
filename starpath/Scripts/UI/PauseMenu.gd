@@ -618,6 +618,7 @@ func _do_save(slot: int) -> void:
 
 func _do_load(slot: int) -> void:
 	SaveManager.load_game(slot)
+	TutorialManager.skip_all()
 	_refresh_stats()
 	_show_slot_feedback("✓  Partida cargada")
 

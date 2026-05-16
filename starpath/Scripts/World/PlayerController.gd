@@ -9,6 +9,7 @@ signal menu_requested
 @onready var anim_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 var _last_dir: String = "down"
+var _tutorial_moved: bool = false
 
 const SPRITE_PATH := "res://Assets/Characters/lyra.png"
 
@@ -64,6 +65,16 @@ func _physics_process(_delta: float) -> void:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		return
+
+	# Tutorial de movimiento — solo la primera vez que el jugador se mueve
+	if not _tutorial_moved and velocity != Vector2.ZERO:
+		_tutorial_moved = true
+		TutorialManager.try_show(
+			"movement",
+			"Controles",
+			"↑ ↓ ← →   Moverse por el mundo\n\nE   Interactuar con personajes y objetos\n\nX   Abrir el menú del juego (equipamiento, guardar...)",
+			false
+		)
 
 	var dir := Vector2(
 		Input.get_axis("ui_left", "ui_right"),
